@@ -1,0 +1,46 @@
+# ── Secrets & credentials (NUNCA commitar) ──────────────────────────
+.env
+.env.local
+.env.*.local
+server/.env
+server/serviceAccountKey.json
+**/serviceAccountKey.json
+**/credentials.json
+**/*-firebase-adminsdk-*.json
+
+# ── Baileys / WhatsApp session data ─────────────────────────────────
+server/auth/
+server/auth_info*/
+**/auth_info_baileys/
+**/*.creds.json
+
+# ── Dependencies ────────────────────────────────────────────────────
+node_modules/
+server/node_modules/
+
+# ── Logs & runtime ──────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+server/logs/
+
+# ── OS / IDE ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── Build / temp ────────────────────────────────────────────────────
+dist/
+build/
+.tmp/
+.cache/
+coverage/
+
+# ── Firebase local emulators ────────────────────────────────────────
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
