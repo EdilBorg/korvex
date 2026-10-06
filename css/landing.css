@@ -1,0 +1,26 @@
+/* ══════════════════════════════════════════════════════════════════════
+   Landing — container base (#landing-screen / #landing-root)
+   ────────────────────────────────────────────────────────────────────
+   Estado "Landing" da SPA Korvex (Landing → Auth → Dashboard).
+
+   #landing-screen  → a "tela" em si, gerida pelo ScreenManager
+                       (classe .screen, ver css/screen-manager.css).
+   #landing-root    → wrapper que reúne os containers de montagem de
+                       cada secção futura da Landing (Navbar, Hero, ...).
+                       Todos ainda vazios — cada secção só recebe
+                       conteúdo/estilo quando o seu componente for
+                       aprovado e implementado.
+   ══════════════════════════════════════════════════════════════════════ */
+
+#landing-screen{
+  position:fixed;
+  inset:0;
+  background:var(--k-bg);
+  color:var(--k-text);
+  overflow-y:auto;
+  z-index:10;
+}
+
+#landing-root{
+  min-height:100%;
+}

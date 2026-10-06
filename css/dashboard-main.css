@@ -1,0 +1,168 @@
+/* ══════════════════════════════════════════════════
+   KORVEX — Dashboard Premium v2
+   ══════════════════════════════════════════════════ */
+
+/* ── Fix de navegação: garantir que cada view ocupa
+      toda a área sem sobreposição.
+      A lógica display:none/flex já existe em app.css
+      e flow-builder.css — aqui apenas garantimos que
+      .content actua como contexto de posicionamento
+      para que as views inactivas não ocupem espaço. ── */
+.content {
+  position: relative;
+}
+
+/* ── Dashboard layout — só aplicar quando activo ── */
+#view-dashboard.active {
+  overflow-y: auto;
+  padding: 20px 24px 40px;
+  flex-direction: column;
+  gap: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--k-border) transparent;
+}
+
+/* ── Cartão de Assinatura — separador visual ── */
+.sub-dashboard-card {
+  flex-shrink: 0;
+}
+
+/* ── Card IA Premium ── */
+.kd-card-ai {
+  background: var(--k-surface);
+  border: 0.5px solid var(--k-border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  transition: border-color .2s;
+}
+.kd-card-ai:hover { border-color: #243552; }
+
+.kd-ai-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.kd-ai-renew {
+  font-size: 11px;
+  color: var(--k-muted);
+  white-space: nowrap;
+  padding-top: 4px;
+}
+.kd-ai-bar-track {
+  height: 6px;
+  background: var(--k-surface2);
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.kd-ai-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+  border-radius: 3px;
+  transition: width .7s ease;
+}
+.kd-ai-bar-fill.warn     { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.kd-ai-bar-fill.critical { background: linear-gradient(90deg, #ef4444, #f87171); }
+.kd-ai-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--k-muted);
+  font-variant-numeric: tabular-nums;
+}
+.kd-ai-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245,158,11,.08);
+  border: 0.5px solid rgba(245,158,11,.3);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 12px;
+  color: #f59e0b;
+  font-weight: 500;
+}
+.kd-ai-alert i { flex-shrink: 0; }
+.kd-ai-alert span { flex: 1; }
+.kd-ai-alert-btn {
+  background: rgba(245,158,11,.15);
+  border: 0.5px solid rgba(245,158,11,.4);
+  color: #f59e0b;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: background .15s;
+}
+.kd-ai-alert-btn:hover { background: rgba(245,158,11,.25); }
+
+/* ── Grid de indicadores ── */
+.kd-grid { display: grid; gap: 10px; flex-shrink: 0; }
+.kd-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* ── Card indicador ── */
+.kd-card {
+  background: var(--k-surface);
+  border: 0.5px solid var(--k-border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: border-color .2s;
+}
+.kd-card:hover { border-color: #243552; }
+
+.kd-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.kd-card-body { flex: 1; min-width: 0; }
+.kd-card-label {
+  font-size: 11px;
+  color: var(--k-muted);
+  font-weight: 500;
+  letter-spacing: .2px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.kd-card-val {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--k-text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.kd-card-sub {
+  font-size: 11px;
+  color: var(--k-muted);
+  margin-top: 4px;
+}
+.kd-card-val.kd-empty {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--k-muted);
+}
+
+/* ── Responsive ── */
+@media (max-width: 960px) {
+  .kd-grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .kd-grid-4 { grid-template-columns: 1fr; }
+  #view-dashboard { padding: 14px 14px 32px; }
+}

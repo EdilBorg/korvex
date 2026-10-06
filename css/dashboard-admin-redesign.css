@@ -1,0 +1,660 @@
+/* ══════════════════════════════════════════════════════════════
+   KORVEX — Dashboard Admin v3.0
+   Remodelação Premium com Layout Compacto
+   ══════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────────────────────────
+   Seção do Dashboard Completo
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-admin-container {
+  display: none;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #0B0E14 0%, #0F172A 100%);
+  min-height: 100vh;
+  flex: 1;
+  overflow-y: auto;
+}
+
+#admin-panel-dashboard.active .dashboard-admin-container {
+  display: flex;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Header do Dashboard com Refresh
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.dashboard-admin-header-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dashboard-admin-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.dashboard-admin-subtitle {
+  font-size: 13px;
+  color: #94A3B8;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+}
+
+.dashboard-admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Botão Refresh
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-admin-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(34, 197, 94, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  color: #38BDF8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.dashboard-admin-refresh-btn:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(34, 197, 94, 0.15));
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+}
+
+.dashboard-admin-refresh-btn:active {
+  transform: scale(0.98);
+}
+
+.refresh-icon {
+  display: inline-block;
+  font-size: 14px;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-admin-refresh-btn.loading .refresh-icon {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.refresh-text {
+  display: inline;
+}
+
+@media (max-width: 640px) {
+  .refresh-text {
+    display: none;
+  }
+}
+
+.dashboard-admin-period {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #38BDF8;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.dashboard-admin-period-icon {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Grid Principal (6 Cards)
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+@media (max-width: 1400px) {
+  .dashboard-admin-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .dashboard-admin-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-admin-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Card de Resumo (KPI) — Compacto
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-admin-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.5));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dashboard-admin-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), transparent);
+  pointer-events: none;
+}
+
+.dashboard-admin-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.7));
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+.dashboard-admin-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-admin-card-title {
+  font-size: 9px;
+  color: #94A3B8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.dashboard-admin-card-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #38BDF8;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.dashboard-admin-card.tipo-usuarios .dashboard-admin-card-icon {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22C55E;
+}
+
+.dashboard-admin-card.tipo-receita .dashboard-admin-card-icon {
+  background: rgba(6, 182, 212, 0.15);
+  color: #06B6D4;
+}
+
+.dashboard-admin-card.tipo-recurso .dashboard-admin-card-icon {
+  background: rgba(168, 85, 247, 0.15);
+  color: #A855F7;
+}
+
+.dashboard-admin-card.tipo-alerta .dashboard-admin-card-icon {
+  background: rgba(249, 115, 22, 0.15);
+  color: #F97316;
+}
+
+.dashboard-admin-card-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-admin-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-admin-card-indicator {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.dashboard-admin-card-indicator.positive {
+  color: #22C55E;
+}
+
+.dashboard-admin-card-indicator.negative {
+  color: #F87171;
+}
+
+.dashboard-admin-card-indicator.neutral {
+  color: #94A3B8;
+}
+
+.dashboard-admin-card-indicator-icon {
+  font-size: 9px;
+  line-height: 1;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Linha de Gráficos (3 colunas + 2 colunas)
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-admin-charts-row {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.dashboard-admin-charts-row.three-cols {
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 24px;
+}
+
+.dashboard-admin-charts-row.two-cols {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 1200px) {
+  .dashboard-admin-charts-row.three-cols {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .dashboard-admin-charts-row.two-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-admin-charts-row.three-cols {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-admin-charts-row.two-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Container de Gráfico
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-admin-chart-container {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.5));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 300px;
+  max-height: 340px;
+  margin-bottom: 4px;
+}
+
+.dashboard-admin-chart-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), transparent);
+  pointer-events: none;
+}
+
+.dashboard-admin-chart-container:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.1);
+}
+
+.dashboard-admin-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-admin-chart-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #FFFFFF;
+  letter-spacing: -0.2px;
+}
+
+.dashboard-admin-chart-meta {
+  font-size: 11px;
+  color: #94A3B8;
+  font-weight: 400;
+}
+
+.dashboard-admin-chart-body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+/* Reduzir tamanho do gráfico donut de Planos */
+#dashboard-plan-distribution-chart canvas {
+  max-width: 220px !important;
+  max-height: 220px !important;
+  width: 220px !important;
+  height: 220px !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Cartão de Resumo Geral
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-admin-summary-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.5));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 300px;
+  max-height: 340px;
+  margin-bottom: 4px;
+}
+
+.dashboard-admin-summary-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), transparent);
+  pointer-events: none;
+}
+
+.dashboard-admin-summary-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.1);
+}
+
+.dashboard-admin-summary-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  justify-content: center;
+}
+
+.dashboard-admin-summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dashboard-admin-summary-item:last-child {
+  border-bottom: none;
+}
+
+.dashboard-admin-summary-label {
+  font-size: 12px;
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.dashboard-admin-summary-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.dashboard-admin-summary-value.growth {
+  color: #22C55E;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   SVG Gráficos
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-admin-svg-chart {
+  width: 100%;
+  height: 100%;
+  max-height: 380px;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Legenda de Gráfico
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-admin-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-admin-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #CBD5E1;
+}
+
+.dashboard-admin-legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.dashboard-admin-legend-color.premium {
+  background: #22C55E;
+}
+
+.dashboard-admin-legend-color.pro {
+  background: #3B82F6;
+}
+
+.dashboard-admin-legend-color.trial {
+  background: #FBBF24;
+}
+
+.dashboard-admin-legend-color.expirado {
+  background: #F87171;
+}
+
+.dashboard-admin-legend-color.suspenso {
+  background: #A78BFA;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Estado de Carregamento
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-admin-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #94A3B8;
+  font-size: 12px;
+  min-height: 180px;
+}
+
+.dashboard-admin-loading::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #38BDF8;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Responsividade Completa
+   ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .dashboard-admin-container {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .dashboard-admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dashboard-admin-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .dashboard-admin-title {
+    font-size: 24px;
+  }
+
+  .dashboard-admin-card {
+    padding: 12px;
+  }
+
+  .dashboard-admin-card-value {
+    font-size: 20px;
+  }
+
+  .dashboard-admin-chart-container,
+  .dashboard-admin-summary-card {
+    padding: 14px;
+  }
+
+  .dashboard-admin-chart-body {
+    min-height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-admin-container {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .dashboard-admin-title {
+    font-size: 20px;
+  }
+
+  .dashboard-admin-card-value {
+    font-size: 18px;
+  }
+
+  .dashboard-admin-chart-title {
+    font-size: 12px;
+  }
+
+  .dashboard-admin-chart-container,
+  .dashboard-admin-summary-card {
+    border-radius: 8px;
+  }
+
+  .dashboard-admin-refresh-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Paleta de Cores do Korvex
+   ────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Fundos */
+  --k-bg-dark: #0B0E14;
+  --k-bg-card: #1E293B;
+  --k-bg-hover: #0F172A;
+
+  /* Bordas */
+  --k-border-light: rgba(255, 255, 255, 0.08);
+  --k-border-focus: rgba(59, 130, 246, 0.3);
+
+  /* Cores de Planos */
+  --k-trial: #FBBF24;
+  --k-pro: #3B82F6;
+  --k-premium: #22C55E;
+  --k-expirado: #F87171;
+  --k-suspenso: #A78BFA;
+
+  /* Cores Complementares */
+  --k-receita: #06B6D4;
+  --k-recurso: #A855F7;
+  --k-alerta: #F97316;
+  --k-sucesso: #22C55E;
+  --k-erro: #EF4444;
+}

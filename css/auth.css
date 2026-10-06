@@ -1,0 +1,85 @@
+/* ═══════════════════════════════════════════════
+   FASE 3.0.2 — Auth Screen
+   ═══════════════════════════════════════════════ */
+#auth-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--k-bg);
+  display:flex;align-items:center;justify-content:center;
+}
+/* Visibilidade agora controlada pela regra partilhada .screen.hidden
+   (css/screen-manager.css) — via opacity/visibility/pointer-events,
+   não mais display:none. Ver css/screen-manager.css. */
+.auth-card{
+  background:var(--k-surface);
+  border:0.5px solid var(--k-border);
+  border-radius:16px;
+  padding:36px 32px 32px;
+  width:100%;max-width:380px;
+  box-shadow:0 20px 60px rgba(0,0,0,.7);
+}
+.auth-logo{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:20px}
+.auth-logo-icon{width:40px;height:40px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.auth-logo-icon img{width:100%;height:100%;object-fit:contain}
+.auth-logo-text{font-size:20px;font-weight:600;letter-spacing:.5px}
+.auth-title{text-align:center;font-size:18px;font-weight:600;margin-bottom:4px}
+.auth-sub{text-align:center;font-size:12px;color:var(--k-muted);margin-bottom:24px}
+.auth-tabs{display:flex;background:var(--k-surface2);border-radius:8px;padding:3px;margin-bottom:20px;gap:3px}
+.auth-tab{
+  flex:1;text-align:center;padding:7px;border-radius:6px;
+  font-size:12px;cursor:pointer;color:var(--k-muted);transition:all .15s;
+}
+.auth-tab.active{background:var(--k-accent);color:#fff;font-weight:500}
+.auth-field{margin-bottom:14px}
+.auth-field label{display:block;font-size:11px;color:var(--k-muted);margin-bottom:5px}
+.auth-field input{
+  width:100%;background:var(--k-surface2);border:0.5px solid var(--k-border);
+  border-radius:8px;padding:9px 12px;color:var(--k-text);font-size:13px;
+  outline:none;font-family:inherit;transition:border-color .15s;
+}
+.auth-field input:focus{border-color:var(--k-accent)}
+.auth-btn{
+  width:100%;padding:10px;border-radius:8px;
+  background:var(--k-accent);border:none;color:#fff;
+  font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;
+  transition:background .15s;margin-top:4px;
+}
+.auth-btn:hover{background:#0060cc}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed}
+.auth-error{
+  font-size:11px;color:#f87171;
+  background:rgba(239,68,68,.08);border:0.5px solid rgba(239,68,68,.25);
+  border-radius:7px;padding:7px 10px;margin-top:12px;display:none;line-height:1.5;
+}
+.auth-error.show{display:block}
+
+/* Topbar auth info */
+.topbar-user-email{font-size:11px;color:var(--k-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-logout{color:#f87171;border-color:rgba(239,68,68,.3);font-size:11px;padding:4px 10px}
+.btn-logout:hover{background:rgba(239,68,68,.1)}
+
+/* ── FASE 2.7 — Terms checkbox no formulário de registo ── */
+.auth-terms-check {
+  margin-bottom: 14px;
+}
+.auth-check-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--k-muted);
+  line-height: 1.6;
+}
+.auth-check-label input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: var(--k-accent);
+  cursor: pointer;
+}
+.auth-check-label a {
+  color: var(--k-accent);
+  text-decoration: none;
+}
+.auth-check-label a:hover { text-decoration: underline; }

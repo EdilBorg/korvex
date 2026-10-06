@@ -1,0 +1,29 @@
+/* ══════════════════════════════════════════════════════════════════════
+   ScreenManager — css/screen-manager.css
+   ────────────────────────────────────────────────────────────────────
+   Regras partilhadas por todas as "telas" geridas pelo ScreenManager
+   (js/screen-manager.js): #landing-screen, #auth-screen.
+
+   Ajuste aprovado em revisão: a classe '.hidden' NÃO usa display:none.
+   Usa opacity + visibility + pointer-events, para permitir transições
+   (fade, etc.) entre Landing ↔ Auth no futuro, sem salto abrupto de
+   layout. A troca continua a ser feita exclusivamente por classList
+   (nenhum style inline é escrito via JS).
+
+   Nota: #sub-block-screen e #app (Dashboard) NÃO usam '.screen' — não
+   são geridos por este módulo e mantêm o seu próprio comportamento,
+   inalterado.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.screen{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+  transition:opacity .25s ease, visibility .25s ease;
+}
+
+.screen.hidden{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}

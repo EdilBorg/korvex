@@ -1,0 +1,196 @@
+
+/* ════════════════════════════════════════════════════════
+   FASE 2.7 — Terms Modal
+   ════════════════════════════════════════════════════════ */
+.terms-modal-overlay {
+  position: fixed; inset: 0; z-index: 999999;
+  background: rgba(0,0,0,.7); backdrop-filter: blur(5px);
+  display: none; align-items: center; justify-content: center; padding: 16px;
+  isolation: isolate;
+}
+.terms-modal-overlay.open { display: flex; }
+.terms-modal {
+  position: relative; z-index: 1000000;
+  background: var(--k-surface); border: 0.5px solid var(--k-border);
+  border-radius: 16px; width: 100%; max-width: 860px; height: 82vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 40px 100px rgba(0,0,0,.85);
+  animation: tmSlide .2s cubic-bezier(.4,0,.2,1);
+}
+@keyframes tmSlide {
+  from { opacity:0; transform:translateY(20px) scale(.97) }
+  to   { opacity:1; transform:translateY(0) scale(1) }
+}
+.terms-modal-header {
+  padding: 16px 20px; border-bottom: 0.5px solid var(--k-border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; gap: 16px; flex-wrap: wrap;
+}
+.terms-modal-header-left { display: flex; align-items: center; gap: 14px; }
+.terms-modal-brand {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 700; color: var(--k-text);
+}
+.terms-modal-titles { display: flex; flex-direction: column; }
+.terms-modal-title { font-size: 15px; font-weight: 600; color: var(--k-text); }
+.terms-modal-ver { font-size: 11px; color: var(--k-muted); margin-top: 1px; }
+.terms-search-wrap {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--k-surface2); border: 0.5px solid var(--k-border);
+  border-radius: 8px; padding: 6px 11px;
+}
+.terms-search-input {
+  background: none; border: none; outline: none;
+  color: var(--k-text); font-size: 12px; font-family: inherit; width: 160px;
+}
+.terms-modal-close {
+  width: 30px; height: 30px; border-radius: 8px; border: none;
+  background: var(--k-surface2); color: var(--k-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+  transition: all .12s; flex-shrink: 0;
+}
+.terms-modal-close:hover { background: var(--k-border); color: var(--k-text); }
+.terms-modal-body {
+  display: flex; flex: 1; overflow: hidden;
+}
+.terms-sidebar {
+  width: 210px; flex-shrink: 0; border-right: 0.5px solid var(--k-border);
+  overflow-y: auto; padding: 12px 0;
+  scrollbar-width: thin; scrollbar-color: var(--k-border) transparent;
+}
+.terms-nav-item {
+  padding: 9px 16px; font-size: 12px; color: var(--k-muted);
+  cursor: pointer; transition: all .1s; border-left: 2px solid transparent;
+  line-height: 1.4;
+}
+.terms-nav-item:hover { background: rgba(0,120,240,.06); color: var(--k-text); }
+.terms-nav-item.active {
+  color: var(--k-accent); border-left-color: var(--k-accent);
+  background: rgba(0,120,240,.08); font-weight: 500;
+}
+.terms-content {
+  flex: 1; overflow-y: auto; padding: 24px 32px;
+  scrollbar-width: thin; scrollbar-color: var(--k-border) transparent;
+}
+.terms-content::-webkit-scrollbar { width: 4px; }
+.terms-content::-webkit-scrollbar-thumb { background: var(--k-border); border-radius: 4px; }
+.terms-section { margin-bottom: 40px; }
+.terms-section-title {
+  font-size: 14px; font-weight: 700; color: var(--k-text);
+  margin-bottom: 16px; padding-bottom: 10px;
+  border-bottom: 0.5px solid var(--k-border);
+}
+.terms-content h3 {
+  font-size: 13px; font-weight: 600; color: var(--k-text);
+  margin: 20px 0 8px;
+}
+.terms-content h3:first-child { margin-top: 0; }
+.terms-content p {
+  font-size: 13px; color: var(--k-muted); line-height: 1.8; margin-bottom: 10px;
+}
+.terms-content ul {
+  padding-left: 20px; margin: 8px 0 12px;
+}
+.terms-content ul li {
+  font-size: 13px; color: var(--k-muted); line-height: 1.7; margin-bottom: 4px;
+}
+.terms-content a { color: var(--k-accent); text-decoration: none; }
+.terms-content a:hover { text-decoration: underline; }
+.terms-modal-footer {
+  padding: 14px 20px; border-top: 0.5px solid var(--k-border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; gap: 12px; flex-wrap: wrap;
+}
+.terms-footer-info {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11px; color: var(--k-muted); line-height: 1.5; flex: 1;
+}
+.terms-btn-primary {
+  background: var(--k-accent); color: #fff; border: none;
+  border-radius: 9px; padding: 9px 20px; font-size: 13px; font-weight: 500;
+  cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 7px;
+  transition: background .12s; white-space: nowrap;
+}
+.terms-btn-primary:hover { background: #0060cc; }
+.terms-btn-secondary {
+  background: var(--k-surface2); color: var(--k-text);
+  border: 0.5px solid var(--k-border); border-radius: 9px;
+  padding: 9px 16px; font-size: 13px; cursor: pointer; font-family: inherit;
+  transition: background .12s; white-space: nowrap;
+}
+.terms-btn-secondary:hover { background: var(--k-border); }
+
+/* ════════════════════════════════════════════════════════
+   FASE 2.7 — Legal Settings View
+   ════════════════════════════════════════════════════════ */
+.legal-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; background: var(--k-surface2);
+  border: 0.5px solid var(--k-border); border-radius: 10px;
+  margin-bottom: 8px; cursor: pointer; transition: background .12s;
+}
+.legal-item:hover { background: var(--k-surface); }
+.legal-item-left { display: flex; align-items: center; gap: 14px; }
+.legal-item-title { font-size: 13px; font-weight: 500; color: var(--k-text); }
+.legal-item-sub   { font-size: 11px; color: var(--k-muted); margin-top: 2px; }
+.legal-meta {
+  margin-top: 20px; background: var(--k-surface2);
+  border: 0.5px solid var(--k-border); border-radius: 10px; overflow: hidden;
+}
+.legal-meta-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px; font-size: 12px;
+  border-bottom: 0.5px solid var(--k-border);
+}
+.legal-meta-row:last-child { border-bottom: none; }
+.legal-meta-row span  { color: var(--k-muted); }
+.legal-meta-row strong { color: var(--k-text); font-weight: 500; }
+
+/* ════════════════════════════════════════════════════════
+   FASE 2.7 — Compliance Admin Panel
+   ════════════════════════════════════════════════════════ */
+.compliance-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 12px; margin-bottom: 20px;
+}
+.compliance-card {
+  background: var(--k-surface2); border: 0.5px solid var(--k-border);
+  border-radius: 10px; padding: 16px; text-align: center;
+}
+.compliance-card.accent { border-color: rgba(0,120,240,.3); background: rgba(0,120,240,.06); }
+.compliance-card-val   { font-size: 28px; font-weight: 700; color: var(--k-text); }
+.compliance-card.accent .compliance-card-val { color: var(--k-accent); }
+.compliance-card-label { font-size: 11px; color: var(--k-muted); margin-top: 4px; }
+.compliance-section { margin-bottom: 20px; }
+.compliance-section-title {
+  font-size: 11px; font-weight: 600; color: var(--k-muted);
+  text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px;
+}
+.compliance-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; background: var(--k-surface2);
+  border: 0.5px solid var(--k-border); border-radius: 8px;
+  margin-bottom: 6px; font-size: 13px;
+}
+.compliance-row-label { color: var(--k-muted); }
+.compliance-row-val   { color: var(--k-text); font-weight: 500; }
+.compliance-badge {
+  background: rgba(0,120,240,.12); color: var(--k-accent);
+  border-radius: 6px; padding: 3px 10px; font-size: 12px;
+}
+.compliance-doc-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; background: var(--k-surface2);
+  border: 0.5px solid var(--k-border); border-radius: 8px;
+  margin-bottom: 6px; font-size: 13px; color: var(--k-text);
+  cursor: pointer; transition: background .12s;
+}
+.compliance-doc-row:hover { background: var(--k-surface); }
+
+/* view-section-title utility */
+.view-section-title {
+  font-size: 18px; font-weight: 700; color: var(--k-text);
+  margin-bottom: 8px;
+}
+
+

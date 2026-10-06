@@ -1,0 +1,430 @@
+/* ══════════════════════════════════════════════════════════════════
+   KORVEX — IA Module Redesign
+   Layout com 4 cartões conforme especificações
+   ══════════════════════════════════════════════════════════════════ */
+
+#view-ia {
+  padding: 20px 24px 40px;
+  overflow-y: auto;
+  background: var(--k-bg);
+  scrollbar-width: none;
+}
+
+#view-ia::-webkit-scrollbar {
+  display: none;
+}
+
+.ia-container {
+  max-width: 980px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   PAGE HEADER
+   ──────────────────────────────────────────────────────────────── */
+
+.ia-page-header {
+  margin-bottom: 24px;
+}
+
+.ia-page-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--k-text);
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   CARD PADRÃO
+   ──────────────────────────────────────────────────────────────── */
+
+.ia-card {
+  background: var(--k-surface);
+  border: 1px solid var(--k-border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ia-card:last-child {
+  margin-bottom: 0;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   CARD HEADER (Título + Badge)
+   ──────────────────────────────────────────────────────────────── */
+
+.ia-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ia-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--k-text);
+  margin: 0;
+  flex: 1;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   BADGES (Status)
+   ──────────────────────────────────────────────────────────────── */
+
+.ia-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ia-badge-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.ia-badge-active {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+}
+.ia-badge-active .ia-badge-dot {
+  background: #22c55e;
+}
+
+.ia-badge-inactive {
+  background: rgba(107, 114, 128, 0.12);
+  color: #6b7280;
+}
+.ia-badge-inactive .ia-badge-dot {
+  background: #9ca3af;
+}
+
+.ia-badge-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+.ia-badge-warning .ia-badge-dot {
+  background: #f59e0b;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   MENSAGENS
+   ──────────────────────────────────────────────────────────────── */
+
+.ia-card-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ia-message-warning {
+  background: rgba(245, 158, 11, 0.08);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.ia-card-message i {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   BOTÕES
+   ──────────────────────────────────────────────────────────────── */
+
+.ia-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ia-btn {
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 0.5px solid var(--k-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  transition: background 0.15s;
+  font-family: inherit;
+  height: auto;
+}
+
+.ia-btn i {
+  font-size: 16px;
+}
+
+.ia-btn-primary {
+  background: var(--k-accent);
+  border-color: var(--k-accent);
+  color: #fff;
+}
+.ia-btn-primary:hover:not(:disabled) {
+  background: #0060cc;
+}
+.ia-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ia-btn-secondary {
+  background: transparent;
+  color: var(--k-text);
+  border: 0.5px solid var(--k-border);
+}
+.ia-btn-secondary:hover:not(:disabled) {
+  background: var(--k-surface2);
+}
+.ia-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ia-save-msg {
+  font-size: 12px;
+  color: var(--k-text-secondary);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   CARD 2: TOKENS
+   ──────────────────────────────────────────────────────────────── */
+
+.ia-tokens-blocks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.ia-token-block {
+  background: var(--k-bg);
+  border: 1px solid var(--k-border);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ia-token-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--k-text);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin: 0;
+}
+
+.ia-token-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--k-text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0 0;
+}
+
+.ia-token-unit {
+  font-size: 11px;
+  color: var(--k-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  margin: 2px 0 0;
+}
+
+/* Barra de progresso do plano */
+.ia-token-bar-container {
+  margin: 8px 0;
+}
+
+.ia-token-bar-track {
+  width: 100%;
+  height: 6px;
+  background: var(--k-bg);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--k-border);
+}
+
+.ia-token-bar-fill {
+  height: 100%;
+  background: var(--k-primary);
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   CARD 3: CONHECIMENTO
+   ──────────────────────────────────────────────────────────────── */
+
+.ia-knowledge-textarea {
+  width: 100%;
+  min-height: 140px;
+  padding: 12px;
+  border: 1px solid var(--k-border);
+  border-radius: 8px;
+  background: var(--k-bg);
+  color: var(--k-text);
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.ia-knowledge-textarea {
+  scrollbar-width: none;
+}
+
+.ia-knowledge-textarea::-webkit-scrollbar {
+  display: none;
+}
+
+.ia-knowledge-textarea:focus {
+  outline: none;
+  border-color: var(--k-primary);
+  box-shadow: 0 0 0 3px rgba(0, 120, 240, 0.1);
+}
+
+.ia-knowledge-textarea::placeholder {
+  color: var(--k-text-secondary);
+}
+
+/* ────────────────────────────────────────────────────────────────
+   CARD 4: HISTÓRICO
+   ──────────────────────────────────────────────────────────────── */
+
+.ia-card-history-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ia-card-history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--k-border);
+}
+
+.ia-card-history-row:last-child {
+  border-bottom: none;
+}
+
+.ia-card-history-label {
+  font-size: 12px;
+  color: var(--k-text-secondary);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.ia-card-history-value {
+  font-size: 13px;
+  color: var(--k-text);
+  font-weight: 500;
+  text-align: right;
+  flex: 1;
+}
+
+.ia-card-history-empty {
+  text-align: center;
+  color: var(--k-text-secondary);
+  font-size: 12px;
+  padding: 24px 0;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .ia-tokens-blocks {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  #view-ia {
+    padding: 14px 14px 32px;
+  }
+
+  .ia-card {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .ia-page-header h1 {
+    font-size: 24px;
+  }
+
+  .ia-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ia-badge {
+    align-self: flex-start;
+  }
+
+  .ia-tokens-blocks {
+    grid-template-columns: 1fr;
+  }
+
+  .ia-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .ia-card-actions {
+    flex-direction: column;
+  }
+
+  .ia-save-msg {
+    align-self: flex-start;
+  }
+
+  .ia-knowledge-textarea {
+    min-height: 120px;
+  }
+
+  .ia-card-history-row {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .ia-card-history-value {
+    text-align: left;
+    width: 100%;
+  }
+}

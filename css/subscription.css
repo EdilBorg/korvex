@@ -1,0 +1,366 @@
+/* ══════════════════════════════════════════════════════════════
+   FASE 3.4 — Dashboard de Subscrição + Modal de Renovação
+   ══════════════════════════════════════════════════════════════ */
+.sub-dashboard-card{
+  background:var(--k-surface);border:0.5px solid var(--k-border);
+  border-radius:12px;padding:20px;margin-bottom:16px;
+}
+.sub-dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.sub-dash-title{font-size:13px;font-weight:600}
+.sub-dash-plan-badge{font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;border:0.5px solid}
+.sub-dash-plan-badge.trial    {color:#f59e0b;border-color:rgba(245,158,11,.4); background:rgba(245,158,11,.1)}
+.sub-dash-plan-badge.active   {color:#22c55e;border-color:rgba(34,197,94,.4);  background:rgba(34,197,94,.1)}
+.sub-dash-plan-badge.expired  {color:#f87171;border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.1)}
+.sub-dash-plan-badge.suspended{color:#a78bfa;border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.1)}
+.sub-dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.sub-dash-item{background:var(--k-surface2);border-radius:8px;padding:12px 14px}
+.sub-dash-item label{display:block;font-size:10px;color:var(--k-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.sub-dash-item span{font-size:15px;font-weight:600}
+.sub-alert{display:flex;align-items:center;gap:10px;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:500;margin-bottom:12px;border:0.5px solid}
+.sub-alert.warn    {color:#f59e0b;border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.08)}
+.sub-alert.danger  {color:#f87171;border-color:rgba(248,113,113,.35);background:rgba(248,113,113,.1)}
+.sub-alert.critical{color:#f87171;border-color:rgba(248,113,113,.5); background:rgba(248,113,113,.15);font-weight:600}
+.sub-account-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding-top:14px;border-top:0.5px solid var(--k-border)}
+.sub-account-item{font-size:12px}
+.sub-account-item label{color:var(--k-muted);display:block;margin-bottom:2px;font-size:11px}
+.sub-account-item span{color:var(--k-text)}
+.btn-renew{background:var(--k-accent);border:none;color:#fff;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:background .15s}
+.btn-renew:hover{background:#0060cc}
+
+/* Modal de Renovação */
+#renew-overlay{position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+#renew-overlay.open{opacity:1;pointer-events:all}
+.renew-modal{background:var(--k-surface);border:0.5px solid var(--k-border);border-radius:16px;width:min(440px,96vw);max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.8);padding:28px 28px 24px}
+.renew-close-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.renew-title{font-size:16px;font-weight:600}
+.renew-close{background:none;border:none;color:var(--k-muted);cursor:pointer;font-size:18px;line-height:1}
+.renew-close:hover{color:var(--k-text)}
+.renew-plan-box{background:linear-gradient(135deg,rgba(0,120,240,.12),rgba(99,102,241,.08));border:0.5px solid rgba(0,120,240,.3);border-radius:12px;padding:18px 20px;margin-bottom:18px;text-align:center}
+.renew-plan-name{font-size:18px;font-weight:700;margin-bottom:6px}
+.renew-plan-price{font-size:28px;font-weight:800;color:var(--k-accent)}
+.renew-plan-price-period{font-size:13px;font-weight:500;color:var(--k-muted);margin-left:2px}
+.renew-plan-period{font-size:12px;color:var(--k-muted);margin-top:2px}
+
+.renew-method-btn-disabled{
+  opacity:.45;cursor:not-allowed;position:relative;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.renew-method-btn-disabled:hover{background:inherit;border-color:inherit}
+.renew-soon-badge{
+  font-size:9px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;
+  background:rgba(255,255,255,.08);color:var(--k-muted);
+  padding:2px 6px;border-radius:99px;
+}
+
+.renew-status-msg{
+  display:none;font-size:12px;line-height:1.6;padding:10px 12px;
+  border-radius:8px;margin-bottom:14px;
+}
+.renew-status-msg.open{display:block}
+.renew-status-msg.error{background:rgba(248,113,113,.1);color:#f87171;border:0.5px solid rgba(248,113,113,.25)}
+.renew-status-msg.pending{background:rgba(0,120,240,.1);color:var(--k-accent2);border:0.5px solid rgba(0,120,240,.25)}
+.renew-status-msg.success{background:rgba(34,197,94,.1);color:#4ade80;border:0.5px solid rgba(34,197,94,.25)}
+.renew-support-line{
+  text-align:center;font-size:11px;color:var(--k-muted);margin-top:14px;
+}
+.renew-support-line a{color:var(--k-accent2);text-decoration:none}
+.renew-support-line a:hover{text-decoration:underline}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.renew-primary-btn:disabled{opacity:.7;cursor:not-allowed}
+.renew-methods{margin-bottom:18px}
+.renew-methods-title{font-size:12px;font-weight:500;color:var(--k-muted);margin-bottom:10px}
+.renew-methods-row{display:flex;gap:8px;flex-wrap:wrap}
+.renew-method-btn{flex:1;min-width:80px;padding:9px 6px;background:var(--k-surface2);border:0.5px solid var(--k-border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;color:var(--k-text);font-family:inherit;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:4px}
+.renew-method-btn:hover{border-color:var(--k-accent);background:rgba(0,120,240,.08)}
+.renew-method-btn.selected{border-color:var(--k-accent);background:rgba(0,120,240,.12);color:var(--k-accent)}
+.renew-method-icon{font-size:18px}
+.renew-info{font-size:12px;color:var(--k-muted);line-height:1.7;margin-bottom:18px}
+.renew-support{background:var(--k-surface2);border-radius:8px;padding:12px 14px;margin-bottom:18px}
+.renew-support p{font-size:11px;color:var(--k-muted);margin:0 0 4px}
+.renew-support a{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--k-text);text-decoration:none;padding:2px 0}
+.renew-support a:hover{color:var(--k-accent)}
+.renew-actions{display:flex;flex-direction:column;gap:8px}
+.renew-primary-btn{width:100%;padding:11px;border-radius:8px;background:var(--k-accent);border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s}
+.renew-primary-btn:hover{background:#0060cc}
+.renew-cancel-btn{width:100%;padding:9px;border-radius:8px;background:var(--k-surface2);border:0.5px solid var(--k-border);color:var(--k-muted);font-size:13px;cursor:pointer;font-family:inherit}
+.renew-cancel-btn:hover{color:var(--k-text)}
+.renew-checkout-msg{font-size:12px;color:#f87171;text-align:center;margin-bottom:8px}
+
+
+/* ── FASE 3.1 — Indicador de subscrição ─────────────────────── */
+.sub-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;padding:3px 9px;border-radius:20px;
+  border:0.5px solid;white-space:nowrap;line-height:1;
+  font-weight:500;letter-spacing:.2px;
+}
+.sub-badge.trial  {color:#f59e0b;border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.08)}
+.sub-badge.active {color:#22c55e;border-color:rgba(34,197,94,.35); background:rgba(34,197,94,.08)}
+.sub-badge.expired{color:#f87171;border-color:rgba(248,113,113,.35);background:rgba(248,113,113,.08)}
+.sub-badge.suspended{color:#a78bfa;border-color:rgba(167,139,250,.35);background:rgba(167,139,250,.08)}
+.sub-badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* ── FASE 3.2 — Ecrãs de bloqueio de subscrição ──────────────── */
+#sub-block-screen{
+  position:fixed;inset:0;z-index:9998;
+  background:var(--k-bg);
+  display:flex;align-items:center;justify-content:center;
+}
+#sub-block-screen.hidden{display:none}
+.sub-block-card{
+  background:var(--k-surface);
+  border:0.5px solid var(--k-border);
+  border-radius:16px;
+  padding:40px 36px 36px;
+  width:100%;max-width:420px;
+  box-shadow:0 20px 60px rgba(0,0,0,.7);
+  text-align:center;
+}
+.sub-block-logo{margin:0 auto 16px;display:flex;justify-content:center}
+.sub-block-logo-img{width:56px;height:56px;object-fit:contain;border-radius:12px}
+.sub-block-status-icon{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 16px;font-size:16px;
+}
+.sub-block-status-icon.expired  {background:rgba(248,113,113,.12);color:#f87171}
+.sub-block-status-icon.suspended{background:rgba(167,139,250,.12);color:#a78bfa}
+.sub-block-title{font-size:20px;font-weight:600;margin-bottom:10px}
+.sub-block-msg{font-size:13px;color:var(--k-muted);line-height:1.7;margin-bottom:22px}
+.sub-block-support{
+  background:var(--k-surface2);border-radius:10px;
+  padding:14px 16px;margin-bottom:24px;text-align:left;
+}
+.sub-block-support p{font-size:12px;color:var(--k-muted);margin:0 0 6px}
+.sub-block-support a{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--k-text);text-decoration:none;
+  padding:3px 0;
+}
+.sub-block-support a:hover{color:var(--k-accent)}
+.sub-block-actions{display:flex;flex-direction:column;gap:9px}
+.sub-block-btn{
+  width:100%;padding:10px;border-radius:8px;
+  font-size:13px;font-weight:500;cursor:pointer;
+  font-family:inherit;border:0.5px solid var(--k-border);
+  background:var(--k-surface2);color:var(--k-text);
+  transition:background .15s;
+}
+.sub-block-btn:hover{background:var(--k-surface)}
+.sub-block-btn.primary{background:var(--k-accent);border-color:var(--k-accent);color:#fff}
+.sub-block-btn.primary:hover{background:#0060cc}
+.sub-block-btn.danger{color:#f87171;border-color:rgba(248,113,113,.3)}
+.sub-block-btn.danger:hover{background:rgba(248,113,113,.08)}
+
+/* ── FASE 3.4.1 — Block screen: plan box + IMPORTANTE ── */
+.sub-block-plan-box{
+  background:var(--k-surface2);border:0.5px solid var(--k-border);
+  border-radius:10px;padding:14px 16px;margin-bottom:14px;text-align:center;
+}
+.sub-block-plan-name{font-size:13px;color:var(--k-muted);margin-bottom:4px}
+.sub-block-plan-price{font-size:22px;font-weight:700;color:var(--k-text);margin-bottom:8px}
+.sub-block-plan-price span{font-size:13px;font-weight:400;color:var(--k-muted)}
+.sub-block-plan-methods{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.sub-block-method{
+  font-size:12px;color:var(--k-text);
+  background:var(--k-surface);border:0.5px solid var(--k-border);
+  border-radius:6px;padding:4px 10px;
+}
+.sub-block-important{
+  background:rgba(251,191,36,.08);border:0.5px solid rgba(251,191,36,.3);
+  border-radius:8px;padding:12px 14px;margin-bottom:12px;
+  font-size:12px;color:var(--k-text);line-height:1.7;
+}
+.sub-block-important-label{
+  font-size:11px;font-weight:700;color:#fbbf24;
+  letter-spacing:.06em;margin-bottom:5px;
+  display:flex;align-items:center;gap:5px;
+}
+.sub-block-activation{
+  font-size:12px;color:var(--k-muted);line-height:1.7;margin-bottom:14px;
+}
+
+/* ── FASE 3.4.1 — Renew modal: IMPORTANTE box ── */
+.renew-important{
+  background:rgba(251,191,36,.08);border:0.5px solid rgba(251,191,36,.3);
+  border-radius:8px;padding:12px 14px;margin-bottom:14px;
+  font-size:12px;color:var(--k-text);line-height:1.7;
+}
+.renew-important-label{
+  font-size:11px;font-weight:700;color:#fbbf24;
+  letter-spacing:.06em;margin-bottom:5px;
+  display:flex;align-items:center;gap:5px;
+}
+
+/* ── Token Purchase Panel ── */
+#token-purchase-overlay{position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+#token-purchase-overlay.open{opacity:1;pointer-events:all}
+.token-purchase-modal{background:var(--k-surface);border:0.5px solid var(--k-border);border-radius:16px;width:min(440px,96vw);max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.8);padding:28px 28px 24px}
+.token-close-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.token-title{font-size:16px;font-weight:600}
+.token-close{background:none;border:none;color:var(--k-muted);cursor:pointer;font-size:18px;line-height:1}
+.token-close:hover{color:var(--k-text)}
+.token-packages{margin-bottom:18px}
+.token-packages-title{font-size:12px;font-weight:500;color:var(--k-muted);margin-bottom:10px}
+.token-packages-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.token-package-btn{padding:12px;background:var(--k-surface2);border:0.5px solid var(--k-border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;color:var(--k-text);font-family:inherit;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.token-package-btn:hover{border-color:var(--k-accent);background:rgba(0,120,240,.08)}
+.token-package-btn.selected{border-color:var(--k-accent);background:rgba(0,120,240,.12);color:var(--k-accent)}
+.token-package-tokens{font-size:16px;font-weight:700}
+.token-package-price{font-size:11px;color:var(--k-muted)}
+.token-methods{margin-bottom:18px}
+.token-methods-title{font-size:12px;font-weight:500;color:var(--k-muted);margin-bottom:10px}
+.token-methods-row{display:flex;gap:8px;flex-wrap:wrap}
+.token-method-btn{flex:1;min-width:80px;padding:9px 6px;background:var(--k-surface2);border:0.5px solid var(--k-border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;color:var(--k-text);font-family:inherit;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:4px}
+.token-method-btn:hover{border-color:var(--k-accent);background:rgba(0,120,240,.08)}
+.token-method-btn.selected{border-color:var(--k-accent);background:rgba(0,120,240,.12);color:var(--k-accent)}
+.token-method-icon{font-size:18px}
+.token-status-msg{display:none;font-size:12px;line-height:1.6;padding:10px 12px;border-radius:8px;margin-bottom:14px}
+.token-status-msg.open{display:block}
+.token-status-msg.error{background:rgba(248,113,113,.1);color:#f87171;border:0.5px solid rgba(248,113,113,.25)}
+.token-status-msg.pending{background:rgba(0,120,240,.1);color:var(--k-accent2);border:0.5px solid rgba(0,120,240,.25)}
+.token-status-msg.success{background:rgba(34,197,94,.1);color:#4ade80;border:0.5px solid rgba(34,197,94,.25)}
+.token-actions{display:flex;flex-direction:column;gap:8px}
+#token-purchase-btn{width:100%;padding:11px;border-radius:8px;background:var(--k-accent);border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s}
+#token-purchase-btn:hover{background:#0060cc}
+#token-purchase-btn:disabled{opacity:.7;cursor:not-allowed}
+.token-cancel-btn{width:100%;padding:9px;border-radius:8px;background:var(--k-surface2);border:0.5px solid var(--k-border);color:var(--k-muted);font-size:13px;cursor:pointer;font-family:inherit}
+.token-cancel-btn:hover{color:var(--k-text)}
+
+/* ── SELEÇÃO DE PLANOS — Modal com Steps ── */
+.renew-step-active{display:block}
+.renew-step-hidden{display:none}
+
+.renew-step-subtitle{
+  font-size:13px;color:var(--k-muted);
+  text-align:center;margin-bottom:22px;font-weight:500;
+}
+
+/* Grid de Cartões de Plano */
+.renew-plans-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;
+}
+@media(max-width:500px){
+  .renew-plans-grid{grid-template-columns:1fr}
+}
+
+/* Cartão Individual de Plano */
+.renew-plan-card{
+  background:var(--k-surface2);border:1px solid var(--k-border);
+  border-radius:12px;padding:20px 16px;cursor:pointer;
+  transition:all .2s ease;position:relative;
+  display:flex;flex-direction:column;
+}
+.renew-plan-card:hover{
+  border-color:var(--k-accent);background:var(--k-surface);
+}
+.renew-plan-card.selected{
+  border-color:var(--k-accent);background:rgba(0,120,240,.08);
+  box-shadow:0 0 0 2px rgba(0,120,240,.1);
+}
+
+.renew-plan-header{
+  text-align:center;margin-bottom:14px;position:relative;
+}
+.renew-plan-badge{
+  font-size:10px;font-weight:700;letter-spacing:.05em;
+  color:#22c55e;text-transform:uppercase;margin-bottom:4px;
+}
+.renew-premium-header{
+  background:rgba(34,197,94,.08);border-radius:6px;padding:8px 12px;margin:-20px -16px 14px -16px;
+  padding-top:12px;
+}
+
+.renew-plan-title{
+  font-size:14px;font-weight:700;color:var(--k-text);
+  letter-spacing:.02em;
+}
+
+/* Conteúdo do Cartão */
+.renew-plan-content{
+  text-align:center;flex:1;display:flex;flex-direction:column;
+}
+
+/* Preço */
+.renew-plan-price{
+  margin-bottom:14px;
+}
+.renew-price-value{
+  font-size:32px;font-weight:800;color:var(--k-accent);
+}
+.renew-price-currency{
+  font-size:14px;font-weight:600;color:var(--k-text);margin-left:2px;
+}
+.renew-price-period{
+  font-size:12px;font-weight:500;color:var(--k-muted);
+  display:block;margin-top:2px;
+}
+
+/* Features */
+.renew-plan-features{
+  list-style:none;padding:0;margin:0 0 16px;
+  font-size:12px;color:var(--k-text);flex:1;
+}
+.renew-plan-features li{
+  display:flex;align-items:center;gap:6px;
+  margin-bottom:6px;line-height:1.4;
+}
+.renew-plan-features li:last-child{margin-bottom:0}
+.renew-plan-features i{
+  color:#22c55e;font-size:14px;flex-shrink:0;
+}
+
+/* Botão Selecionar */
+.renew-plan-select-btn{
+  width:100%;padding:8px;background:none;border:1px solid var(--k-accent);
+  border-radius:6px;color:var(--k-accent);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:inherit;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  margin-top:auto;
+}
+.renew-plan-select-btn:hover{
+  background:var(--k-accent);color:#fff;
+}
+.renew-plan-card.selected .renew-plan-select-btn{
+  background:var(--k-accent);color:#fff;border-color:var(--k-accent);
+}
+
+/* Actions para Step de Planos */
+.renew-actions-plans{
+  display:flex;flex-direction:column;gap:8px;
+}
+
+/* Resumo do Plano (Step 2) */
+.renew-plan-summary{
+  background:var(--k-surface2);border:0.5px solid var(--k-border);
+  border-radius:10px;padding:12px 14px;margin-bottom:16px;
+}
+.renew-summary-item{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;padding:6px 0;
+}
+.renew-summary-item:not(:last-child){
+  border-bottom:0.5px solid var(--k-border);
+}
+.renew-summary-item span{color:var(--k-muted)}
+.renew-summary-item strong{color:var(--k-text);font-weight:600}
+
+/* Status message para step de planos */
+#renew-status-msg-plans{
+  font-size:12px;line-height:1.6;padding:10px 12px;
+  border-radius:8px;margin-bottom:14px;display:none;
+}
+#renew-status-msg-plans.open{display:block}
+#renew-status-msg-plans.error{
+  background:rgba(248,113,113,.1);color:#f87171;
+  border:0.5px solid rgba(248,113,113,.25)
+}
+#renew-status-msg-plans.pending{
+  background:rgba(0,120,240,.1);color:var(--k-accent2);
+  border:0.5px solid rgba(0,120,240,.25)
+}
+#renew-status-msg-plans.success{
+  background:rgba(34,197,94,.1);color:#4ade80;
+  border:0.5px solid rgba(34,197,94,.25)
+}
+
