@@ -1,0 +1,216 @@
+/* ══════════════════════════════════════════════════════════════════════
+   Hero — components/hero/hero.css
+   ────────────────────────────────────────────────────────────────────
+   Usa exclusivamente as variáveis do Design System já existentes em
+   css/app.css (--k-bg, --k-surface, --k-surface2, --k-border, --k-text,
+   --k-muted, --k-accent, --k-accent2). Nenhuma cor nova é introduzida.
+   Sem imagens, sem vídeo — apenas tipografia, layout e CSS.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.hero{
+  display:flex;
+  align-items:center;
+  min-height:100vh;
+  padding:132px 24px 64px;
+  box-sizing:border-box;
+}
+
+.hero__container{
+  width:100%;
+  max-width:1200px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  align-items:center;
+  gap:56px;
+}
+
+/* ── Coluna de conteúdo ── */
+.hero__content{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:22px;
+  max-width:560px;
+}
+
+.hero__eyebrow{
+  display:inline-flex;
+  align-items:center;
+  padding:6px 14px;
+  border-radius:20px;
+  border:0.5px solid var(--k-border);
+  background:var(--k-surface2);
+  color:var(--k-accent2);
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:.2px;
+}
+
+.hero__headline{
+  font-size:44px;
+  line-height:1.15;
+  font-weight:700;
+  color:var(--k-text);
+  margin:0;
+  letter-spacing:-.5px;
+}
+
+.hero__subheadline{
+  font-size:15px;
+  line-height:1.75;
+  color:var(--k-muted);
+  margin:0;
+}
+
+/* ── Micro-benefícios ── */
+.hero__benefits{
+  list-style:none;
+  margin:6px 0 0;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.hero__benefit{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.hero__benefit-icon{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:28px; height:28px;
+  flex-shrink:0;
+  border-radius:8px;
+  background:rgba(0,120,240,.12);
+  color:var(--k-accent2);
+  font-size:14px;
+}
+
+.hero__benefit-text{
+  font-size:13px;
+  color:var(--k-text);
+  line-height:1.5;
+}
+
+/* ── CTAs ── */
+.hero__actions{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-top:10px;
+  flex-wrap:wrap;
+}
+
+.hero__btn{
+  font-family:inherit;
+  font-size:13px;
+  font-weight:600;
+  padding:12px 24px;
+  border-radius:9px;
+  cursor:pointer;
+  border:0.5px solid var(--k-border);
+  background:transparent;
+  color:var(--k-text);
+  transition:background .15s ease, border-color .15s ease, transform .1s ease;
+}
+.hero__btn:hover{ background:var(--k-surface2) }
+.hero__btn:active{ transform:translateY(1px) }
+.hero__btn:focus-visible{ outline:2px solid var(--k-accent2); outline-offset:2px }
+
+.hero__btn--ghost{ background:transparent }
+.hero__btn--primary{
+  background:var(--k-accent);
+  border-color:var(--k-accent);
+  color:#fff;
+  box-shadow:0 8px 24px rgba(0,120,240,.25);
+}
+.hero__btn--primary:hover{ background:#0060cc }
+
+/* ── Coluna do Live Canvas (apenas container reservado) ── */
+.hero__canvas-wrap{
+  position:relative;
+  width:100%;
+  min-height:460px;
+  border-radius:16px;
+  border:0.5px solid var(--k-border);
+  background:var(--k-surface);
+  overflow:hidden;
+}
+
+.hero__canvas-dots{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background-image:radial-gradient(circle, var(--k-border) 1px, transparent 1px);
+  background-size:26px 26px;
+  animation:hero-dots-drift 18s linear infinite;
+}
+
+#hero-canvas-root{
+  position:relative;
+  z-index:1;
+  width:100%;
+  height:100%;
+  min-height:460px;
+}
+
+@keyframes hero-dots-drift{
+  from{ background-position:0 0; }
+  to{ background-position:52px 52px; }
+}
+
+/* ── Animação leve de entrada (JS adiciona .hero--in ao montar) ── */
+.hero__eyebrow,
+.hero__headline,
+.hero__subheadline,
+.hero__benefits,
+.hero__actions,
+.hero__canvas-wrap{
+  opacity:0;
+  transform:translateY(14px);
+  transition:opacity .5s ease, transform .5s ease;
+}
+.hero--in .hero__eyebrow{      opacity:1; transform:none; transition-delay:.02s }
+.hero--in .hero__headline{     opacity:1; transform:none; transition-delay:.08s }
+.hero--in .hero__subheadline{  opacity:1; transform:none; transition-delay:.14s }
+.hero--in .hero__benefits{     opacity:1; transform:none; transition-delay:.20s }
+.hero--in .hero__actions{      opacity:1; transform:none; transition-delay:.26s }
+.hero--in .hero__canvas-wrap{  opacity:1; transform:none; transition-delay:.16s }
+
+@media (prefers-reduced-motion: reduce){
+  .hero__canvas-dots{ animation:none }
+  .hero__eyebrow, .hero__headline, .hero__subheadline,
+  .hero__benefits, .hero__actions, .hero__canvas-wrap{
+    transition:none; opacity:1; transform:none;
+  }
+}
+
+/* ── Responsivo ── */
+@media (max-width: 1024px){
+  .hero{ padding:120px 24px 56px }
+  .hero__container{ gap:40px }
+  .hero__headline{ font-size:36px }
+}
+
+@media (max-width: 900px){
+  .hero__container{
+    grid-template-columns:1fr;
+  }
+  .hero__content{ max-width:none }
+  .hero__canvas-wrap{ min-height:340px; order:2 }
+  .hero__content{ order:1 }
+}
+
+@media (max-width: 480px){
+  .hero{ padding:104px 16px 48px }
+  .hero__headline{ font-size:29px }
+  .hero__subheadline{ font-size:14px }
+  .hero__actions{ width:100%; flex-direction:column; align-items:stretch }
+  .hero__btn{ text-align:center; width:100% }
+  .hero__canvas-wrap{ min-height:280px }
+}

@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Korvex — Automação WhatsApp</title>
+
+<!-- Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
+
+<!-- CSS — ordem de carregamento obrigatória -->
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/flow-builder.css">
+<link rel="stylesheet" href="css/auth.css">
+<link rel="stylesheet" href="css/subscription.css">
+<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/dashboard-admin-redesign.css">
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/dashboard-main.css">
+<link rel="stylesheet" href="css/analytics.css">
+<link rel="stylesheet" href="css/inbox.css">
+<link rel="stylesheet" href="css/ia.css">
+
+<!-- Landing (SPA: Landing → Auth → Dashboard) -->
+<link rel="stylesheet" href="css/screen-manager.css">
+<link rel="stylesheet" href="css/landing.css">
+<link rel="stylesheet" href="components/navbar/navbar.css">
+<link rel="stylesheet" href="components/hero/hero.css">
+<!-- futuros CSS de secção: problem.css, solution.css,
+     how-it-works.css, inbox-section.css, flow-builder-section.css,
+     analytics-section.css, pricing.css, faq.css, cta-final.css,
+     footer.css — adicionados aqui à medida que forem aprovados -->
+
+<style>
+/* Settings — scroll próprio dentro do wrapper, scrollbar fina no canto direito */
+#view-settings { overflow: hidden !important; padding: 0 !important; }
+#view-settings > div:first-child {
+  scrollbar-width: thin;
+  scrollbar-color: var(--k-border) transparent;
+}
+#view-settings > div:first-child::-webkit-scrollbar { width: 4px; }
+#view-settings > div:first-child::-webkit-scrollbar-track { background: transparent; }
+#view-settings > div:first-child::-webkit-scrollbar-thumb { background: var(--k-border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     Landing — estado inicial da SPA (Landing → Auth → Dashboard)
+     ─────────────────────────────────────────────────────────────
+     Visibilidade controlada exclusivamente pelo ScreenManager
+     (js/screen-manager.js), via classe 'screen'/'hidden'
+     (opacity/visibility/pointer-events — ver css/screen-manager.css).
+
+     #landing-root reúne os containers de montagem de cada secção da
+     Landing (ordem = ordem de secções do PLANO_FINAL.md). Todos vazios
+     por agora — cada um só recebe conteúdo quando o respectivo
+     componente for implementado e aprovado. Apenas #navbar-root está
+     em uso nesta fase.
+     ═══════════════════════════════════════════════════════════ -->
+<div id="landing-screen" class="screen">
+  <div id="landing-root">
+    <div id="navbar-root"></div>
+    <div id="hero-root"></div>
+    <div id="problem-root"></div>
+    <div id="solution-root"></div>
+    <div id="how-root"></div>
+    <div id="inbox-root"></div>
+    <div id="flow-builder-root"></div>
+    <div id="analytics-root"></div>
+    <div id="pricing-root"></div>
+    <div id="faq-root"></div>
+    <div id="cta-root"></div>
+    <div id="footer-root"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     FASE 3.0.2 — Auth Screen
+     Mostrado após navegação a partir da Landing. Oculto por
+     omissão (ScreenManager mostra 'landing' como estado inicial).
+     ═══════════════════════════════════════════════ -->
+<div id="auth-screen" class="screen hidden">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon"><img src="data:image/png;base64,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" alt="Korvex Logo"></div>
+      <span class="auth-logo-text">Korvex</span>
+    </div>
+    <div class="auth-title">Bem-vindo ao Korvex</div>
+    <div class="auth-sub">Crie e gerencie fluxos profissionais</div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="auth-tab-login" onclick="authShowTab('login')">Entrar</div>
+      <div class="auth-tab" id="auth-tab-register" onclick="authShowTab('register')">Criar conta</div>
+    </div>
+
+    <!-- Login -->
+    <div id="auth-panel-login">
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="auth-login-email" placeholder="exemplo@email.com" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label>Palavra-passe</label>
+        <input type="password" id="auth-login-pass" placeholder="••••••" autocomplete="current-password">
+      </div>
+      <button class="auth-btn" id="auth-login-btn" onclick="authDoLogin()">Entrar</button>
+      <div class="auth-error" id="auth-login-err"></div>
+    </div>
+
+    <!-- Register -->
+    <div id="auth-panel-register" style="display:none">
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="auth-reg-email" placeholder="exemplo@email.com" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label>Palavra-passe <span style="color:var(--k-muted)">(mínimo 6 caracteres)</span></label>
+        <input type="password" id="auth-reg-pass" placeholder="••••••" autocomplete="new-password">
+      </div>
+      <div class="auth-terms-check">
+        <label class="auth-check-label">
+          <input type="checkbox" id="auth-terms-cb" onchange="authTermsCbChange()">
+          <span>Li e aceito os
+            <a href="#" onclick="openTermsModal('terms');return false">Termos de Uso</a>
+            e a
+            <a href="#" onclick="openTermsModal('privacy');return false">Política de Privacidade</a>
+            da Korvex</span>
+        </label>
+      </div>
+      <button class="auth-btn" id="auth-reg-btn" onclick="authDoRegister()" disabled>Criar Conta</button>
+      <div class="auth-error" id="auth-reg-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FASE 3.2 — Ecrã: Assinatura Expirada
+     ═══════════════════════════════════════════════════════════ -->
+<div id="sub-block-screen" class="hidden">
+  <div class="sub-block-card" id="sub-block-card">
+    <!-- conteúdo gerado dinamicamente por _subRenderBlockScreen() -->
+  </div>
+</div>
+
+<div class="app" id="app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-icon"><img src="data:image/png;base64,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" alt="Korvex Logo"></div>
+      <span class="logo-text">Korvex</span>
+    </div>
+    <div class="nav">
+      <div class="section-title">Principal</div>
+      <div class="nav-item active" onclick="setView('dashboard',this)"><i class="ti ti-layout-dashboard nav-icon"></i><span>Dashboard</span></div>
+      <div class="nav-item" onclick="setView('inbox',this)"><i class="ti ti-messages nav-icon"></i><span>Inbox</span></div>
+      <div class="nav-item" onclick="setView('flows-list',this)"><i class="ti ti-hierarchy nav-icon"></i><span>Fluxos</span></div>
+      <div class="section-title">Sistema</div>
+      <div class="nav-item" onclick="setView('connections',this)"><i class="ti ti-plug nav-icon"></i><span>Conexões</span></div>
+      <div class="nav-item" onclick="setView('clients',this)"><i class="ti ti-users nav-icon"></i><span>Clientes</span></div>
+      <div class="nav-item" onclick="setView('analytics',this)"><i class="ti ti-chart-bar nav-icon"></i><span>Analytics</span></div>
+      <div class="nav-item" onclick="setView('ia',this)"><i class="ti ti-brain nav-icon"></i><span>IA</span></div>
+      <div class="nav-item" onclick="setView('settings',this)"><i class="ti ti-settings nav-icon"></i><span>Configurações</span></div>
+      <div class="nav-item" onclick="setView('legal',this)"><i class="ti ti-shield-check nav-icon"></i><span>Legal</span></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="status-dot" id="sidebar-conn-dot"></div>
+      <span class="status-label" id="sidebar-conn-label">0 conexões activas</span>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <button style="background:none;border:none;color:var(--k-muted);cursor:pointer;font-size:18px;display:none" id="menu-btn" onclick="document.getElementById('sidebar').style.transform='translateX(0)'"><i class="ti ti-menu-2"></i></button>
+      <span class="topbar-title" id="topbar-title">Dashboard</span>
+      <input class="topbar-search" placeholder="Buscar...">
+      <button class="btn btn-primary" onclick="FlowPublisher.newFlow()"><i class="ti ti-plus"></i> Novo fluxo</button>
+      <span id="sub-badge" class="sub-badge" style="display:none"></span>
+      <button class="btn btn-admin" id="btn-admin" style="display:none" onclick="AdminPanel.open()" title="Painel Administrativo"><i class="ti ti-shield-lock"></i> Admin</button>
+      <span class="topbar-user-email" id="topbar-user-email"></span>
+      <button class="btn btn-logout" id="btn-logout" onclick="authDoLogout()" title="Sair"><i class="ti ti-logout"></i> Sair</button>
+      <div class="avatar" id="topbar-avatar">?</div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="view active" id="view-dashboard">
+
+        <!-- ── Card de Subscrição (intocável) ── -->
+        <div class="sub-dashboard-card" id="sub-dash-card">
+          <div class="sub-dash-header">
+            <span class="sub-dash-title"><i class="ti ti-credit-card" style="margin-right:6px"></i>A sua Assinatura</span>
+            <span id="sub-dash-plan-badge" class="sub-dash-plan-badge">—</span>
+          </div>
+          <div id="sub-dash-alert"></div>
+          <div class="sub-dash-grid" id="sub-dash-grid">
+            <div class="sub-dash-item"><label>Plano</label><span id="sub-dash-plan">—</span></div>
+            <div class="sub-dash-item"><label>Estado</label><span id="sub-dash-status">—</span></div>
+            <div class="sub-dash-item"><label>Dias Restantes</label><span id="sub-dash-days">—</span></div>
+            <div class="sub-dash-item"><label>Expira em</label><span id="sub-dash-expiry">—</span></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <button class="btn-renew" onclick="RenewPanel.open()">
+              <i class="ti ti-refresh"></i> Assinar / Renovar
+            </button>
+            <div class="sub-account-grid" style="flex:1;min-width:260px" id="sub-dash-account">
+              <div class="sub-account-item"><label>Email</label><span id="sub-acct-email">—</span></div>
+              <div class="sub-account-item"><label>Plano</label><span id="sub-acct-plan">—</span></div>
+              <div class="sub-account-item"><label>Data de criação</label><span id="sub-acct-created">—</span></div>
+              <div class="sub-account-item"><label>Último acesso</label><span id="sub-acct-login">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── IA Premium ── -->
+        <div class="kd-card kd-card-ai" id="kd-ai-card">
+          <div class="kd-ai-header">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="kd-card-icon" style="background:rgba(99,102,241,.14);color:#818cf8;flex-shrink:0"><i class="ti ti-cpu"></i></div>
+              <div>
+                <div class="kd-card-label">IA Premium — Tokens</div>
+                <div class="kd-card-val" id="kd-ai-used" style="font-size:18px">—</div>
+              </div>
+            </div>
+            <div class="kd-ai-renew">Renova em <strong id="kd-ai-days">—</strong> dias</div>
+          </div>
+          <div class="kd-ai-bar-track">
+            <div class="kd-ai-bar-fill" id="kd-ai-bar" style="width:0%"></div>
+          </div>
+          <div class="kd-ai-bar-labels">
+            <span id="kd-ai-label-used">0</span>
+            <span id="kd-ai-label-total">/ —</span>
+          </div>
+          <div id="kd-ai-alert" style="display:none" class="kd-ai-alert">
+            <i class="ti ti-alert-triangle"></i>
+            <span id="kd-ai-alert-msg">Tokens a esgotar.</span>
+            <button class="kd-ai-alert-btn" onclick="RenewPanel.open()">Comprar mais tokens</button>
+          </div>
+        </div>
+
+        <!-- ── Indicadores principais ── -->
+        <div class="kd-grid kd-grid-4">
+
+          <div class="kd-card">
+            <div class="kd-card-icon" style="background:rgba(0,200,240,.1);color:#00c8f0"><i class="ti ti-hierarchy"></i></div>
+            <div class="kd-card-body">
+              <div class="kd-card-label">Fluxos Criados</div>
+              <div class="kd-card-val" id="kd-flows-total">—</div>
+            </div>
+          </div>
+
+          <div class="kd-card">
+            <div class="kd-card-icon" style="background:rgba(245,158,11,.1);color:#f59e0b"><i class="ti ti-users"></i></div>
+            <div class="kd-card-body">
+              <div class="kd-card-label">Contactos</div>
+              <div class="kd-card-val" id="kd-clients-new">—</div>
+            </div>
+          </div>
+
+          <div class="kd-card">
+            <div class="kd-card-icon" style="background:rgba(0,120,240,.12);color:#0078f0"><i class="ti ti-message-circle"></i></div>
+            <div class="kd-card-body">
+              <div class="kd-card-label">Conversas Activas</div>
+              <div class="kd-card-val" id="kd-conv-active">—</div>
+            </div>
+          </div>
+
+          <div class="kd-card">
+            <div class="kd-card-icon" style="background:rgba(34,197,94,.1);color:#22c55e"><i class="ti ti-brand-whatsapp"></i></div>
+            <div class="kd-card-body">
+              <div class="kd-card-label">Números Ligados</div>
+              <div class="kd-card-val" id="dash-wa-count">—</div>
+              <div class="kd-card-sub" id="dash-wa-status" style="color:var(--k-muted)">A carregar…</div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- INBOX -->
+      <div class="view" id="view-inbox" style="padding:0">
+        <div class="inbox-split">
+          <div class="inbox-list">
+            <div class="inbox-header">
+              <div class="inbox-header-top">
+                <span class="inbox-header-title">Inbox</span>
+                <div class="inbox-header-actions">
+                  <button class="inbox-icon-btn" id="inbox-btn-quick-replies-mgr" title="Gerir respostas rápidas"><i class="ti ti-message-2-bolt"></i></button>
+                </div>
+              </div>
+              <div class="inbox-search-wrap">
+                <i class="ti ti-search"></i>
+                <input class="inbox-search" placeholder="Nome, número, palavra ou etiqueta...">
+              </div>
+              <div class="inbox-filters" id="inbox-filters">
+                <button class="inbox-filter active" data-filter="all">Todas</button>
+                <button class="inbox-filter" data-filter="unread">Não lidas</button>
+                <button class="inbox-filter" data-filter="human">Em atendimento</button>
+                <button class="inbox-filter" data-filter="replied">Respondidas</button>
+                <button class="inbox-filter" data-filter="resolved">Resolvidas</button>
+                <button class="inbox-filter" data-filter="archived">Arquivadas</button>
+                <button class="inbox-filter" data-filter="hasFlow">Com fluxo activo</button>
+                <button class="inbox-filter" data-filter="noFlow">Sem fluxo</button>
+                <button class="inbox-filter" data-filter="favorite">Favoritas</button>
+                <button class="inbox-filter" data-filter="tagged">Com etiquetas</button>
+              </div>
+            </div>
+            <div class="inbox-items" id="inbox-items-list">
+              <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 16px;gap:10px;text-align:center">
+                <i class="ti ti-inbox" style="font-size:28px;color:var(--k-muted);opacity:.3"></i>
+                <div style="font-size:12px;color:var(--k-muted)">Nenhuma conversa encontrada</div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-area">
+            <div class="chat-empty">
+              <div class="chat-empty-inner">
+                <div class="chat-empty-icon"><i class="ti ti-messages"></i></div>
+                <div style="font-size:16px;font-weight:600;color:var(--k-text)">Nenhuma conversa seleccionada</div>
+                <div style="font-size:12px;color:var(--k-muted);line-height:1.7">Selecione uma conversa à esquerda para ver o histórico de mensagens.</div>
+              </div>
+            </div>
+          </div>
+          <!-- Painel lateral: dados do contacto (colapsável) -->
+          <div class="inbox-contact-panel" id="inbox-contact-panel" style="display:none">
+            <div class="icp-header">
+              <span class="icp-title">Contacto</span>
+              <button class="inbox-icon-btn" id="inbox-contact-panel-close" title="Fechar painel"><i class="ti ti-x"></i></button>
+            </div>
+            <div class="icp-tabs" id="icp-tabs">
+              <button class="icp-tab active" data-icp-tab="info"><i class="ti ti-id"></i> Info</button>
+              <button class="icp-tab" data-icp-tab="timeline"><i class="ti ti-timeline"></i> Timeline</button>
+              <button class="icp-tab" data-icp-tab="notes"><i class="ti ti-notes"></i> Notas</button>
+              <button class="icp-tab" data-icp-tab="files"><i class="ti ti-paperclip"></i> Ficheiros</button>
+            </div>
+            <div class="icp-panes">
+              <div class="icp-pane active" id="icp-pane-info"></div>
+              <div class="icp-pane" id="icp-pane-timeline"></div>
+              <div class="icp-pane" id="icp-pane-notes"></div>
+              <div class="icp-pane" id="icp-pane-files"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- LISTA DE FLUXOS -->
+      <!-- FASE 3.2.1 — Removidas as tabs Activos/Arquivados: já não existe
+           o conceito de fluxo arquivado nem publicado. Todos os fluxos
+           guardados aparecem na mesma lista, ordenados por mais recente. -->
+      <div class="view" id="view-flows-list" style="padding:0;overflow:hidden">
+        <div class="flist-header">
+          <i class="ti ti-hierarchy" style="color:var(--k-accent2);font-size:16px"></i>
+          <span class="flist-header-title">Fluxos</span>
+          <button class="btn btn-primary btn-sm" onclick="FlowPublisher.newFlow()">
+            <i class="ti ti-plus"></i> Novo fluxo
+          </button>
+        </div>
+        <div class="flist-body" id="flist-body">
+          <!-- injectado por FlowListView.render() -->
+        </div>
+      </div>
+
+      <!-- FLOW BUILDER -->
+      <div class="view" id="view-flows">
+
+        <!-- Toolbar -->
+        <!-- FASE 3.2.3 — Ajuste final: "Adicionar Bloco" e "Simular" são
+             funções essenciais do construtor e foram reactivadas na
+             toolbar. Continuam removidos: Analisar, Duplicar, Apagar,
+             contadores, Desfazer/Refazer, Organizar, controlos de zoom
+             (esses ficam no rodapé, ver kb-hint). Toolbar final: nome,
+             indicador de Auto Save, Adicionar Bloco, Simular, Salvar —
+             sem zona rolável nem scroll horizontal. -->
+        <div class="fb-toolbar">
+          <button class="btn btn-sm" onclick="FlowListView.backToList()" title="Voltar à lista">
+            <i class="ti ti-arrow-left"></i>
+          </button>
+          <div class="fb-sep"></div>
+          <input class="fb-name-input" id="fb-name" value="Novo fluxo">
+          <div class="fb-sep"></div>
+          <div class="fb-save-status saved" id="fb-status"><i class="ti ti-check" style="font-size:11px"></i> Salvo automaticamente</div>
+
+          <div style="flex:1"></div>
+
+          <button class="btn btn-sm btn-add-block" onclick="openBlockLib()" title="Adicionar Bloco (A)">
+            <i class="ti ti-plus"></i> Adicionar Bloco
+          </button>
+          <button class="btn btn-sm" onclick="FlowSimulator.open()" id="btn-simulator" title="Simular fluxo">
+            <i class="ti ti-player-play"></i> Simular
+          </button>
+          <div class="fb-sep"></div>
+          <button class="btn btn-sm" onclick="fbSave()"><i class="ti ti-device-floppy"></i> Salvar</button>
+        </div>
+
+        <div class="fb-body">
+
+          <!-- FASE 2.5 — Block Library Sidebar (replaces left palette) -->
+          <div class="block-lib" id="block-lib">
+            <div class="block-lib-header">
+              <div class="block-lib-title">
+                <i class="ti ti-layout-grid"></i>
+                Blocos
+              </div>
+              <button class="block-lib-close" onclick="closeBlockLib()" title="Fechar (ESC)">
+                <i class="ti ti-x"></i>
+              </button>
+            </div>
+            <div class="block-lib-search">
+              <i class="ti ti-search" style="color:var(--k-muted);font-size:13px;flex-shrink:0"></i>
+              <input id="block-lib-q" class="block-lib-input" placeholder="Pesquisar bloco..." autocomplete="off">
+            </div>
+            <div class="block-lib-body" id="block-lib-body"></div>
+          </div>
+
+          <!-- Canvas -->
+          <div class="fb-canvas-wrap" id="fb-wrap">
+            <div class="fb-dot-grid" id="fb-grid"></div>
+            <div class="fb-canvas" id="fb-canvas">
+              <svg class="fb-svg" id="fb-svg"></svg>
+            </div>
+            <div class="sel-box" id="sel-box"></div>
+            <div class="canvas-empty-state" id="canvas-empty-state" style="display:none">
+              <i class="ti ti-hierarchy"></i>
+              <div class="canvas-empty-state-title">Nenhum bloco ainda</div>
+              <div class="canvas-empty-state-sub">Clique em "Adicionar bloco" ou arraste um bloco da paleta para começar o seu fluxo.</div>
+              <button class="btn btn-sm btn-primary canvas-empty-state-btn" onclick="openPicker()"><i class="ti ti-plus"></i> Adicionar primeiro bloco</button>
+            </div>
+            <canvas class="minimap" id="minimap" width="148" height="94"></canvas>
+            <!-- FASE 3.2.2 — Rodapé simplificado: removidos Organizar,
+                 Diagnóstico e "Alt+Drag Pan". Adicionar/Eliminar/Ajustar
+                 mantidos como atalhos informativos; Zoom +/- passam a
+                 ser controlos clicáveis (antes só existiam na toolbar,
+                 agora removida). -->
+            <div class="kb-hint">
+              <span><kbd>A</kbd> Adicionar</span>
+              <span><kbd>Del</kbd> Eliminar</span>
+              <span><kbd>F</kbd> Ajustar</span>
+              <span class="kb-hint-zoom">
+                <button class="kb-zoom-btn" onclick="fbZoom(-0.1)" title="Diminuir zoom"><i class="ti ti-zoom-out"></i></button>
+                <span class="kb-zoom-val" id="fb-zoom-val">100%</span>
+                <button class="kb-zoom-btn" onclick="fbZoom(0.1)" title="Aumentar zoom"><i class="ti ti-zoom-in"></i></button>
+              </span>
+            </div>
+          </div>
+
+          <!-- FASE 2.6 — fb-panel oculto (substituído por node-modal central) -->
+          <div class="fb-panel" id="fb-panel" style="display:none">
+            <div class="panel-body" id="panel-body"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- FASE 3.0 — CONEXÕES -->
+      <div class="view" id="view-connections">
+
+        <div class="conn-page-header">
+          <div>
+            <div class="view-section-title">Conexões</div>
+            <p style="font-size:12px;color:var(--k-muted);margin-top:4px">Gere as integrações do Korvex com canais externos.</p>
+          </div>
+          <div class="conn-summary">
+            <span class="conn-summary-dot" id="conn-summary-dot"></span>
+            <span id="conn-summary-label">A carregar…</span>
+          </div>
+        </div>
+
+        <!-- FASE 3.2.1 — Parte 3/4: todos os canais seguem o mesmo padrão
+             visual de card (.conn-card), incluindo o WhatsApp. O card não
+             mostra todos os detalhes directamente — apenas nome, descrição
+             curta, status e um único botão de acção. Detalhes completos
+             (número, fluxo activo, etc.) ficam no modal "Gerir Canal". -->
+        <!-- FASE 3.2.2 — O card WhatsApp já não tem botão "Conectar"
+             próprio: o card inteiro é clicável e abre sempre o modal
+             "Gerir Canal" (que é onde o botão Conectar agora vive,
+             dentro do modal). Quando desconectado, mostra apenas o
+             estado; quando conectado, mostra o número e o nome do
+             fluxo ativo — igual ao padrão dos outros canais (clicar
+             para ver detalhes, sem acção directa no card). -->
+        <div class="conn-section-title">Canais de Mensagens</div>
+        <div class="conn-cards-grid">
+
+          <!-- Número 1 (todos os planos) -->
+          <div class="conn-card conn-card-clickable" id="conn-whatsapp-card" onclick="ConnectionService.openManageChannel('whatsapp_1')">
+            <div class="conn-card-head">
+              <div class="conn-icon" style="background:rgba(34,197,94,.12)">
+                <i class="ti ti-brand-whatsapp" style="color:#22c55e;font-size:20px"></i>
+              </div>
+              <div class="conn-status-pill" id="wa-status-pill-1">
+                <span class="conn-pill-dot"></span>
+                <span id="wa-status-pill-label-1">Desconectado</span>
+              </div>
+            </div>
+            <div class="conn-name">WhatsApp <span style="color:var(--k-muted);font-size:10px">Número 1</span></div>
+            <div class="conn-desc">Canal principal de automação</div>
+            <div class="conn-card-details" id="wa-card-details-1"></div>
+          </div>
+
+          <!-- Número 2 (apenas Premium) -->
+          <div id="wa-slot2-wrap" style="position:relative">
+            <div class="conn-card conn-card-clickable" id="conn-whatsapp-card-2" onclick="ConnectionService.openManageChannel('whatsapp_2')">
+              <div class="conn-card-head">
+                <div class="conn-icon" style="background:rgba(34,197,94,.12)">
+                  <i class="ti ti-brand-whatsapp" style="color:#22c55e;font-size:20px"></i>
+                </div>
+                <div class="conn-status-pill" id="wa-status-pill-2">
+                  <span class="conn-pill-dot"></span>
+                  <span id="wa-status-pill-label-2">Desconectado</span>
+                </div>
+              </div>
+              <div class="conn-name">WhatsApp <span style="color:var(--k-muted);font-size:10px">Número 2</span></div>
+              <div class="conn-desc">Segundo número — Plano Premium</div>
+              <div class="conn-card-details" id="wa-card-details-2"></div>
+            </div>
+            <!-- Badge de bloqueio para Trial -->
+            <div id="wa-slot2-lock" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);border-radius:12px;pointer-events:none">
+              <span style="background:var(--k-surface);border:0.5px solid var(--k-border);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--k-muted);display:flex;align-items:center;gap:4px">
+                <i class="ti ti-lock" style="font-size:11px"></i> Premium
+              </span>
+            </div>
+          </div>
+
+          <div class="conn-card conn-card-soon">
+            <div class="conn-card-head">
+              <div class="conn-icon" style="background:rgba(0,136,204,.15)">
+                <i class="ti ti-brand-telegram" style="color:#0088cc;font-size:20px"></i>
+              </div>
+              <span class="conn-soon-badge">Em breve</span>
+            </div>
+            <div class="conn-name">Telegram</div>
+            <div class="conn-desc">Automação via Bot API do Telegram</div>
+            <div class="conn-status" style="color:var(--k-muted)"><i class="ti ti-clock" style="font-size:11px"></i> Disponível na próxima versão</div>
+          </div>
+
+          <div class="conn-card conn-card-soon">
+            <div class="conn-card-head">
+              <div class="conn-icon" style="background:rgba(225,48,108,.12)">
+                <i class="ti ti-brand-instagram" style="color:#e1306c;font-size:20px"></i>
+              </div>
+              <span class="conn-soon-badge">Em breve</span>
+            </div>
+            <div class="conn-name">Instagram</div>
+            <div class="conn-desc">Mensagens directas via Meta Business API</div>
+            <div class="conn-status" style="color:var(--k-muted)"><i class="ti ti-clock" style="font-size:11px"></i> Disponível na próxima versão</div>
+          </div>
+
+          <div class="conn-card conn-card-soon">
+            <div class="conn-card-head">
+              <div class="conn-icon" style="background:rgba(0,200,240,.1)">
+                <i class="ti ti-api" style="color:var(--k-accent2);font-size:20px"></i>
+              </div>
+              <span class="conn-soon-badge">Em breve</span>
+            </div>
+            <div class="conn-name">API Pública</div>
+            <div class="conn-desc">Integração com sistemas externos via REST</div>
+            <div class="conn-status" style="color:var(--k-muted)"><i class="ti ti-clock" style="font-size:11px"></i> Disponível na próxima versão</div>
+          </div>
+
+        </div>
+      </div>
+      <!-- FASE 6.0 — Vista Clientes (utilizador normal) -->
+      <div class="view" id="view-clients">
+        <div class="cl-page-header">
+          <div>
+            <div class="view-section-title">Clientes</div>
+            <p style="font-size:12px;color:var(--k-muted);margin-top:4px">Contactos que interagiram com o teu bot WhatsApp. <span id="cl-total-count">0</span> no total.</p>
+          </div>
+        </div>
+
+        <div class="cl-toolbar">
+          <input class="cl-search topbar-search" id="cl-search" placeholder="&#xE524; Pesquisar por nome ou número…" style="width:220px">
+          <div class="cl-filters">
+            <button class="cl-filter-btn active" data-filter="all">Todos</button>
+            <button class="cl-filter-btn" data-filter="bot">Bot</button>
+            <button class="cl-filter-btn" data-filter="human">Humano</button>
+            <button class="cl-filter-btn" data-filter="done">Concluído</button>
+          </div>
+        </div>
+
+        <div class="cl-list" id="cl-list">
+          <div class="cl-empty">
+            <i class="ti ti-loader" style="font-size:28px;color:var(--k-muted);opacity:.4"></i>
+            <p style="color:var(--k-muted)">A carregar…</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal detalhe do contacto -->
+      <div class="cl-modal-overlay" id="cl-modal" style="display:none">
+        <div class="cl-modal-box">
+          <div class="cl-modal-head">
+            <div class="cl-modal-avatar" id="cl-modal-avatar">?</div>
+            <div>
+              <div class="cl-modal-title" id="cl-modal-name">—</div>
+              <div class="cl-modal-phone" id="cl-modal-phone">—</div>
+            </div>
+            <button class="cl-modal-close" onclick="ClientsView.closeDetail()"><i class="ti ti-x"></i></button>
+          </div>
+          <div class="cl-modal-body">
+            <div class="cl-modal-row"><span class="cl-modal-label">Estado</span><span class="cl-modal-status-val" id="cl-modal-status">—</span></div>
+            <div class="cl-modal-row"><span class="cl-modal-label">Última mensagem</span><span id="cl-modal-last">—</span></div>
+            <div class="cl-modal-row"><span class="cl-modal-label">Fluxo ativo</span><span id="cl-modal-flow">—</span></div>
+            <div class="cl-modal-row"><span class="cl-modal-label">Prévia</span><span id="cl-modal-msgs" style="color:var(--k-muted)">—</span></div>
+            <div class="cl-modal-row"><span class="cl-modal-label">Nome WhatsApp</span><span id="cl-modal-pushname">—</span></div>
+            <div class="cl-modal-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+              <span class="cl-modal-label">Nome guardado</span>
+              <div style="display:flex;gap:8px;width:100%">
+                <input class="cl-modal-input" id="cl-modal-savedname" placeholder="Ex: João Silva" data-phone="">
+                <button class="btn btn-primary" onclick="ClientsView.saveContactName()">Guardar</button>
+              </div>
+              <span id="cl-modal-save-msg" style="font-size:11px"></span>
+            </div>
+            <!-- Accoes rapidas -->
+            <div style="border-top:0.5px solid var(--k-border);margin-top:12px;padding-top:12px">
+              <div class="cl-modal-label" style="margin-bottom:8px">Accoes</div>
+              <div style="display:flex;flex-wrap:wrap;gap:7px">
+                <button class="btn btn-sm" onclick="ClientsView.openInInbox()" title="Abrir no Inbox"><i class="ti ti-messages"></i> Inbox</button>
+                <button class="btn btn-sm" onclick="ClientsView.transferToHuman()" title="Transferir para humano"><i class="ti ti-user"></i> Humano</button>
+                <button class="btn btn-sm" onclick="ClientsView.markDone()" title="Marcar concluido"><i class="ti ti-circle-check"></i> Concluir</button>
+                <button class="btn btn-sm" onclick="ClientsView.returnToBot()" title="Devolver ao bot"><i class="ti ti-robot"></i> Bot</button>
+              </div>
+              <span id="cl-act-msg" style="font-size:11px;margin-top:6px;display:block"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista Analytics -->
+      <div class="view" id="view-analytics">
+
+        <div class="an-header">
+          <div>
+            <div class="view-section-title">Analytics</div>
+            <p class="an-subtitle">Métricas reais do seu negócio, calculadas a partir dos dados do workspace.</p>
+          </div>
+          <div class="an-header-actions">
+            <div class="an-range-tabs" id="an-range-tabs">
+              <button class="an-range-tab active" data-range="today">Hoje</button>
+              <button class="an-range-tab" data-range="7d">7 dias</button>
+              <button class="an-range-tab" data-range="30d">30 dias</button>
+              <button class="an-range-tab" data-range="90d">90 dias</button>
+            </div>
+            <div class="an-export-wrap">
+              <button class="btn btn-sm" id="an-export-btn"><i class="ti ti-download"></i> Exportar</button>
+              <div class="an-export-menu" id="an-export-menu">
+                <button onclick="AnalyticsView.exportReport('csv')"><i class="ti ti-file-type-csv"></i> CSV</button>
+                <button onclick="AnalyticsView.exportReport('excel')"><i class="ti ti-file-spreadsheet"></i> Excel</button>
+                <button onclick="AnalyticsView.exportReport('pdf')"><i class="ti ti-file-type-pdf"></i> PDF</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="an-root">
+          <div class="an-loading">
+            <i class="ti ti-loader-2"></i>
+            <p>A carregar métricas...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista IA -->
+      <!-- Vista IA -->
+      <div class="view" id="view-ia"></div>
+
+      <!-- Vista Configuracoes -->
+      <div class="view" id="view-settings" style="overflow:visible;padding:0">
+        <div style="flex:1;overflow-y:auto;padding:24px 32px 48px;width:100%">
+        <div style="max-width:860px;margin:0 auto;width:100%">
+        <div class="view-section-title">Configuracoes</div>
+        <p style="font-size:12px;color:var(--k-muted);margin-top:4px;margin-bottom:24px">Definicoes do teu workspace e conta.</p>
+
+        <!-- Workspace -->
+        <div style="background:var(--k-surface);border:0.5px solid var(--k-border);border-radius:12px;padding:20px;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:500;color:var(--k-muted);margin-bottom:16px;display:flex;align-items:center;gap:6px"><i class="ti ti-building"></i> Workspace</div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div>
+              <div style="font-size:11px;color:var(--k-muted);margin-bottom:6px">Nome do workspace</div>
+              <input class="cl-modal-input" id="st-workspace-name" placeholder="Ex: Loja Korvex" style="width:100%;box-sizing:border-box">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--k-muted);margin-bottom:6px">Nome do bot</div>
+              <input class="cl-modal-input" id="st-bot-name" placeholder="Ex: Assistente Korvex" style="width:100%;box-sizing:border-box">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+              <div>
+                <div style="font-size:11px;color:var(--k-muted);margin-bottom:6px">Fuso horario</div>
+                <select class="cl-modal-input" id="st-timezone" style="width:100%">
+                  <option value="Africa/Maputo">Africa/Maputo (GMT+2)</option>
+                  <option value="Africa/Johannesburg">Africa/Johannesburg (GMT+2)</option>
+                  <option value="Africa/Luanda">Africa/Luanda (GMT+1)</option>
+                  <option value="Europe/Lisbon">Europe/Lisbon (GMT+0/+1)</option>
+                  <option value="America/Sao_Paulo">America/Sao_Paulo (GMT-3)</option>
+                  <option value="UTC">UTC</option>
+                </select>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--k-muted);margin-bottom:6px">Idioma do bot</div>
+                <select class="cl-modal-input" id="st-language" style="width:100%">
+                  <option value="pt">Portugues</option>
+                  <option value="en">English</option>
+                  <option value="es">Espanol</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:18px;display:flex;align-items:center;gap:10px">
+            <button class="btn btn-primary" onclick="SettingsView.save()"><i class="ti ti-device-floppy"></i> Guardar</button>
+            <span id="st-save-msg" style="font-size:11px"></span>
+          </div>
+        </div>
+
+
+        <!-- Conta -->
+        <div style="background:var(--k-surface);border:0.5px solid var(--k-border);border-radius:12px;padding:20px;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:500;color:var(--k-muted);margin-bottom:16px;display:flex;align-items:center;gap:6px"><i class="ti ti-user-circle"></i> Conta</div>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:12px">
+            <div class="cl-modal-row"><span class="cl-modal-label">Email</span><span id="st-acct-email" style="color:var(--k-text)">-</span></div>
+            <div class="cl-modal-row"><span class="cl-modal-label">UID</span><span id="st-acct-uid" style="color:var(--k-muted);font-size:10px;word-break:break-all">-</span></div>
+            <div class="cl-modal-row"><span class="cl-modal-label">Plano</span><span id="st-acct-plan" style="color:var(--k-text)">-</span></div>
+          </div>
+          <div style="margin-top:16px;display:flex;align-items:center;gap:10px">
+            <button class="btn" id="st-reset-pw-btn" onclick="SettingsView.sendResetPassword()"><i class="ti ti-key"></i> Alterar password</button>
+            <span id="st-reset-pw-msg" style="font-size:11px"></span>
+          </div>
+        </div>
+        </div><!-- fim max-width wrapper -->
+        </div><!-- fim scroll wrapper -->
+      </div>
+
+      <!-- FASE 2.7 — Vista Legal -->
+      <div class="view" id="view-legal" style="max-width:640px;margin:0 auto">
+        <div class="view-section-title">Legal</div>
+        <p style="font-size:13px;color:var(--k-muted);margin-bottom:20px;line-height:1.7">
+          Documentos legais da Korvex. Clique em qualquer documento para ler o conteúdo completo.
+        </p>
+        <div id="legal-settings-body">
+          <div style="color:var(--k-muted);font-size:13px">A carregar…</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     FASE 2.9 — Publish modal
+     ═══════════════════════════════════════════════ -->
+<div class="pub-overlay" id="pub-overlay" onclick="if(event.target===this)closePubModal()">
+  <div class="pub-modal">
+    <div class="pub-modal-head">
+      <i class="ti ti-world-upload" style="color:var(--k-accent2);font-size:15px"></i>
+      <span class="pub-modal-title" id="pub-modal-title">Publicar fluxo</span>
+      <button class="panel-close" onclick="closePubModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="pub-modal-body" id="pub-modal-body"></div>
+    <div class="pub-modal-footer" id="pub-modal-footer"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     FASE 3.2.1/3.2.2 — Modal "Gerir Canal"
+     ─────────────────────────────────────────────────
+     Mostra número, estado da ligação e o selector de
+     Fluxo Ativo para este número de WhatsApp. Cada
+     número possui o seu próprio activeFlowId — esta UI
+     já está preparada para múltiplos números no futuro
+     (Parte 8), embora hoje só exista um canal WhatsApp.
+
+     FASE 3.2.2 — O botão "Conectar" foi removido do card
+     principal e passou a existir apenas aqui dentro do
+     modal (visível só quando desconectado). Número e
+     selector de Fluxo Ativo só fazem sentido depois de
+     ligado, por isso ficam escondidos em "disconnected".
+     ═══════════════════════════════════════════════ -->
+<div class="pub-overlay" id="manage-channel-overlay" onclick="if(event.target===this)ConnectionService.closeManageChannel()">
+  <div class="pub-modal">
+    <div class="pub-modal-head">
+      <i class="ti ti-brand-whatsapp" style="color:#22c55e;font-size:15px"></i>
+      <span class="pub-modal-title">Gerir Canal — WhatsApp <span id="mc-slot-label" style="color:var(--k-muted);font-size:11px"></span></span>
+      <button class="panel-close" onclick="ConnectionService.closeManageChannel()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="pub-modal-body">
+
+      <!-- Estado desconectado: apenas a pill de estado + botão Conectar -->
+      <div id="mc-disconnected-view" style="text-align:center;padding:8px 0 4px">
+        <div class="conn-status-pill" id="mc-status-pill-disc" style="display:inline-flex;margin-bottom:14px">
+          <span class="conn-pill-dot"></span>
+          <span>Desconectado</span>
+        </div>
+        <p style="font-size:11px;color:var(--k-muted);line-height:1.6;margin-bottom:16px">
+          Ligue este número ao WhatsApp para começar a usar automações.
+        </p>
+        <button class="btn btn-success" id="mc-btn-connect" onclick="ConnectionService.connectWhatsApp()">
+          <i class="ti ti-plug"></i> Conectar
+        </button>
+      </div>
+
+      <!-- Estado conectado/a conectar: detalhes completos -->
+      <div id="mc-connected-view" style="display:none">
+        <div style="border:0.5px solid var(--k-border);border-radius:9px;padding:4px 12px;margin-bottom:12px">
+          <div class="pub-info-row">
+            <span class="pub-info-label">Número</span>
+            <span class="pub-info-val" id="mc-phone">—</span>
+          </div>
+          <div class="pub-info-row">
+            <span class="pub-info-label">Estado</span>
+            <span class="pub-info-val">
+              <span class="conn-status-pill" id="mc-status-pill" style="display:inline-flex">
+                <span class="conn-pill-dot"></span>
+                <span id="mc-status-label">Desconectado</span>
+              </span>
+            </span>
+          </div>
+          <div class="pub-info-row">
+            <span class="pub-info-label">Fluxo Ativo</span>
+            <select class="mc-flow-select" id="mc-flow-select">
+              <option value="">— Selecionar fluxo —</option>
+            </select>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--k-muted);line-height:1.6" id="mc-flow-hint">
+          Este fluxo é executado automaticamente sempre que este número recebe uma mensagem.
+        </p>
+      </div>
+
+    </div>
+    <div class="pub-modal-footer" style="flex-wrap:wrap">
+      <button class="btn btn-sm" id="mc-btn-refresh-qr" onclick="ConnectionService.refreshQr()" style="display:none">
+        <i class="ti ti-refresh"></i> Atualizar QR
+      </button>
+      <button class="btn btn-sm" id="mc-btn-disconnect" onclick="ConnectionService.disconnectWhatsApp()" style="display:none">
+        <i class="ti ti-plug-x"></i> Desconectar
+      </button>
+      <button class="btn btn-sm btn-primary" id="mc-btn-change-flow" onclick="ConnectionService.changeActiveFlow()" style="display:none">
+        <i class="ti ti-check"></i> Alterar Fluxo
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     FASE 2.8 — FlowSimulator overlay
+     ═══════════════════════════════════════════════ -->
+<div class="sim-overlay" id="sim-overlay" onclick="if(event.target===this)FlowSimulator.close()">
+  <div class="sim-panel">
+    <div class="sim-head">
+      <i class="ti ti-player-play" style="color:var(--k-accent2);font-size:15px"></i>
+      <span class="sim-head-title">Simulador de Fluxo</span>
+      <span class="sim-badge" id="sim-badge">Pronto</span>
+      <button class="panel-close" onclick="FlowSimulator.close()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="sim-controls" id="sim-controls">
+      <button class="btn btn-sm" id="sim-btn-prev" onclick="FlowSimulator.prev()" title="Passo anterior"><i class="ti ti-player-skip-back"></i></button>
+      <button class="btn btn-sm" id="sim-btn-next" onclick="FlowSimulator.next()" title="Próximo passo"><i class="ti ti-player-skip-forward"></i></button>
+      <button class="btn btn-sm btn-primary" id="sim-btn-start" onclick="FlowSimulator.start()" title="Iniciar"><i class="ti ti-player-play"></i> Iniciar</button>
+      <button class="btn btn-sm" id="sim-btn-stop" onclick="FlowSimulator.stop()" title="Parar" style="display:none"><i class="ti ti-player-stop"></i> Parar</button>
+      <button class="btn btn-sm" id="sim-btn-reset" onclick="FlowSimulator.reset()" title="Reiniciar"><i class="ti ti-refresh"></i></button>
+      <div class="sim-speed-group">
+        <span style="font-size:10px;color:var(--k-muted)">Auto</span>
+        <button class="sim-speed-btn active" onclick="FlowSimulator.setSpeed(1,this)">1×</button>
+        <button class="sim-speed-btn" onclick="FlowSimulator.setSpeed(2,this)">2×</button>
+        <button class="sim-speed-btn" onclick="FlowSimulator.setSpeed(4,this)">4×</button>
+      </div>
+    </div>
+    <div class="sim-body" id="sim-body">
+      <div style="font-size:12px;color:var(--k-muted);text-align:center;padding:20px 0">
+        Clique <b style="color:var(--k-text)">Iniciar</b> para começar a simulação.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WorkflowEngine diagnostic overlay -->
+<div class="wf-overlay" id="wf-overlay">
+  <div class="wf-panel">
+    <div class="wf-head">
+      <div style="display:flex;align-items:center;gap:8px">
+        <i class="ti ti-topology-star-3" style="color:var(--k-accent2);font-size:16px"></i>
+        <span style="font-weight:500;font-size:13px">Diagnóstico do Fluxo</span>
+        <span id="wf-badge" class="wf-badge"></span>
+      </div>
+      <button class="panel-close" onclick="closeWfDiag()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="wf-body" id="wf-body"></div>
+  </div>
+</div>
+
+<!-- FASE 2.6 — Node Editor Modal (central, professional) -->
+<div class="node-modal-overlay" id="node-modal-overlay" onclick="if(event.target===this)closeNodeModal()">
+  <div class="node-modal" id="node-modal">
+    <div class="node-modal-header">
+      <div class="node-modal-header-left">
+        <div class="node-modal-icon" id="node-modal-icon">
+          <i class="ti ti-settings" id="node-modal-icon-i"></i>
+        </div>
+        <div>
+          <div class="node-modal-title" id="node-modal-title">Configurar Bloco</div>
+          <div class="node-modal-subtitle" id="node-modal-subtitle"></div>
+        </div>
+      </div>
+      <button class="node-modal-close" onclick="closeNodeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="node-modal-body" id="node-modal-body"></div>
+    <div class="node-modal-footer">
+      <button class="node-modal-btn-secondary" onclick="closeNodeModal()">Cancelar</button>
+      <div style="display:flex;gap:8px">
+        <button class="node-modal-btn-danger" onclick="deleteSel();closeNodeModal()" title="Eliminar bloco">
+          <i class="ti ti-trash"></i>
+        </button>
+        <button class="node-modal-btn-primary" id="node-modal-save" onclick="saveNodeModal()">
+          <i class="ti ti-check"></i> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FASE 2.5 — picker-overlay mantido vazio para compatibilidade (substituído por block-lib) -->
+<div id="picker-overlay" style="display:none">
+  <input id="picker-q" style="display:none">
+  <div id="picker-body" style="display:none"></div>
+</div>
+
+<!-- Context menu -->
+<div class="ctx" id="ctx">
+  <div class="ctx-item" id="ctx-edit"><i class="ti ti-edit"></i> Editar bloco</div>
+  <div class="ctx-item" id="ctx-dup"><i class="ti ti-copy"></i> Duplicar <span style="margin-left:auto;font-size:10px;color:var(--k-muted)">Ctrl+D</span></div>
+  <div class="ctx-item" id="ctx-copy"><i class="ti ti-clipboard"></i> Copiar <span style="margin-left:auto;font-size:10px;color:var(--k-muted)">Ctrl+C</span></div>
+  <div class="ctx-item" id="ctx-paste"><i class="ti ti-clipboard-check"></i> Colar <span style="margin-left:auto;font-size:10px;color:var(--k-muted)">Ctrl+V</span></div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" id="ctx-add"><i class="ti ti-plus"></i> Adicionar aqui</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item red" id="ctx-del"><i class="ti ti-trash"></i> Eliminar <span style="margin-left:auto;font-size:10px">Del</span></div>
+</div>
+
+<!-- Edge context menu -->
+<div class="ctx" id="ctx-edge" style="min-width:170px">
+  <div class="ctx-item red" id="ctx-edge-del"><i class="ti ti-scissors"></i> Remover conexão <span style="margin-left:auto;font-size:10px">Del</span></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FASE 3.3 — Painel Administrativo Korvex
+     ═══════════════════════════════════════════════════════════ -->
+<div id="admin-overlay" onclick="if(event.target===this)AdminPanel.close()">
+  <div class="admin-modal">
+    <div class="admin-header">
+      <div class="admin-header-icon"><img src="./assets/logo.png" alt="Korvex" style="width:32px;height:32px;object-fit:contain"></div>
+      <h2>Painel Administrativo</h2>
+      <button class="admin-close" onclick="AdminPanel.close()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="admin-tabs">
+      <div class="admin-tab active" onclick="AdminPanel.setTab('dashboard')">Dashboard</div>
+      <div class="admin-tab" onclick="AdminPanel.setTab('users')">Utilizadores</div>
+      <div class="admin-tab" onclick="AdminPanel.setTab('logs')">Histórico</div>
+      <div class="admin-tab" onclick="AdminPanel.setTab('compliance')">Conformidade</div>
+    </div>
+    <div class="admin-body">
+
+      <!-- Dashboard Redesenhado v3.0 -->
+      <div class="dashboard-admin-container admin-panel" id="admin-panel-dashboard">
+  
+  <!-- Header com Refresh -->
+  <div class="dashboard-admin-header">
+    <div class="dashboard-admin-header-title">
+      <h1 class="dashboard-admin-title">Dashboard</h1>
+      <p class="dashboard-admin-subtitle">Visão geral do sistema Korvex</p>
+    </div>
+    <div class="dashboard-admin-header-actions">
+      <button class="admin-btn secondary" style="font-size:11px;padding:4px 10px" onclick="AdminPanel.refreshDashboard()">
+        ⟳ Atualizar
+      </button>
+      <div class="dashboard-admin-period">
+        <span class="dashboard-admin-period-icon">📅</span>
+        <span id="dashboard-period-range">Hoje</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Linha 1: 6 Cards de Resumo -->
+  <div class="dashboard-admin-grid" id="admin-stats-grid">
+    
+    <!-- Card 1: Total de Utilizadores -->
+    <div class="dashboard-admin-card tipo-usuarios">
+      <div class="dashboard-admin-card-header">
+        <div class="dashboard-admin-card-title">Total Utilizadores</div>
+      </div>
+      <div class="dashboard-admin-card-value" id="admin-stat-total-users">—</div>
+      <div class="dashboard-admin-card-footer">
+        <span class="dashboard-admin-card-indicator positive">
+          <span class="dashboard-admin-card-indicator-icon">↑</span>
+          <span id="admin-stat-users-change">+12%</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Card 2: Utilizadores Ativos -->
+    <div class="dashboard-admin-card tipo-usuarios">
+      <div class="dashboard-admin-card-header">
+        <div class="dashboard-admin-card-title">Utilizadores Ativos</div>
+      </div>
+      <div class="dashboard-admin-card-value" id="admin-stat-active-users">—</div>
+      <div class="dashboard-admin-card-footer">
+        <span class="dashboard-admin-card-indicator neutral">
+          <span id="admin-stat-active-percent">—%</span> ativos
+        </span>
+      </div>
+    </div>
+
+    <!-- Card 3: Receita Total -->
+    <div class="dashboard-admin-card tipo-receita">
+      <div class="dashboard-admin-card-header">
+        <div class="dashboard-admin-card-title">Receita Total</div>
+      </div>
+      <div class="dashboard-admin-card-value" id="admin-stat-total-revenue">—</div>
+      <div class="dashboard-admin-card-footer">
+        <span class="dashboard-admin-card-indicator positive">
+          <span class="dashboard-admin-card-indicator-icon">↑</span>
+          <span>+8%</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Card 4: Receita Mensal (MRR) -->
+    <div class="dashboard-admin-card tipo-receita">
+      <div class="dashboard-admin-card-header">
+        <div class="dashboard-admin-card-title">Receita Mensal</div>
+      </div>
+      <div class="dashboard-admin-card-value" id="admin-stat-mrr">—</div>
+      <div class="dashboard-admin-card-footer">
+        <span class="dashboard-admin-card-indicator neutral">
+          MRR mensal
+        </span>
+      </div>
+    </div>
+
+    <!-- Card 5: Trial -->
+    <div class="dashboard-admin-card tipo-usuarios">
+      <div class="dashboard-admin-card-header">
+        <div class="dashboard-admin-card-title">Trial</div>
+      </div>
+      <div class="dashboard-admin-card-value" id="admin-stat-trial">—</div>
+      <div class="dashboard-admin-card-footer">
+        <span class="dashboard-admin-card-indicator neutral">
+          <span id="admin-stat-trial-change">—%</span> da base
+        </span>
+      </div>
+    </div>
+
+    <!-- Card 6: Expirados -->
+    <div class="dashboard-admin-card tipo-alerta">
+      <div class="dashboard-admin-card-header">
+        <div class="dashboard-admin-card-title">Expirados</div>
+      </div>
+      <div class="dashboard-admin-card-value" id="admin-stat-expired">—</div>
+      <div class="dashboard-admin-card-footer">
+        <span class="dashboard-admin-card-indicator negative">
+          <span id="admin-stat-expired-change">—%</span> da base
+        </span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Linha 2: 3 Gráficos (Receita, Donut, Resumo) -->
+  <div class="dashboard-admin-charts-row three-cols">
+    
+    <!-- Gráfico: Receita (Linha) -->
+    <div class="dashboard-admin-chart-container">
+      <div class="dashboard-admin-chart-header">
+        <div>
+          <div class="dashboard-admin-chart-title">Receita</div>
+          <div class="dashboard-admin-chart-meta">Últimos 7 dias</div>
+        </div>
+      </div>
+      <div class="dashboard-admin-chart-body">
+        <div id="dashboard-revenue-chart" class="dashboard-admin-loading">A carregar…</div>
+      </div>
+    </div>
+
+    <!-- Gráfico: Distribuição dos Planos (Donut) -->
+    <div class="dashboard-admin-chart-container">
+      <div class="dashboard-admin-chart-header">
+        <div>
+          <div class="dashboard-admin-chart-title">Planos</div>
+          <div class="dashboard-admin-chart-meta">Distribuição</div>
+        </div>
+      </div>
+      <div class="dashboard-admin-chart-body">
+        <div id="dashboard-plan-distribution-chart" class="dashboard-admin-loading">A carregar…</div>
+      </div>
+      <div class="dashboard-admin-chart-legend" id="dashboard-plan-distribution-legend"></div>
+    </div>
+
+    <!-- Resumo Geral -->
+    <div class="dashboard-admin-summary-card">
+      <div class="dashboard-admin-chart-header">
+        <div>
+          <div class="dashboard-admin-chart-title">Resumo Geral</div>
+          <div class="dashboard-admin-chart-meta">Período actual</div>
+        </div>
+      </div>
+      <div class="dashboard-admin-summary-body">
+        <div class="dashboard-admin-summary-item">
+          <span class="dashboard-admin-summary-label">Conversões</span>
+          <span class="dashboard-admin-summary-value" id="admin-summary-conversions">—</span>
+        </div>
+        <div class="dashboard-admin-summary-item">
+          <span class="dashboard-admin-summary-label">Novos Utilizadores</span>
+          <span class="dashboard-admin-summary-value" id="admin-summary-new-users">—</span>
+        </div>
+        <div class="dashboard-admin-summary-item">
+          <span class="dashboard-admin-summary-label">Crescimento</span>
+          <span class="dashboard-admin-summary-value growth" id="admin-summary-growth">—</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Linha 3: 2 Gráficos (Barras + Multibar) -->
+  <div class="dashboard-admin-charts-row two-cols">
+    
+    <!-- Gráfico: Novos Utilizadores (Barras) -->
+    <div class="dashboard-admin-chart-container">
+      <div class="dashboard-admin-chart-header">
+        <div>
+          <div class="dashboard-admin-chart-title">Novos Utilizadores</div>
+          <div class="dashboard-admin-chart-meta">Últimos 7 dias</div>
+        </div>
+      </div>
+      <div class="dashboard-admin-chart-body">
+        <div id="dashboard-new-users-chart" class="dashboard-admin-loading">A carregar…</div>
+      </div>
+    </div>
+
+    <!-- Gráfico: Utilizadores por Plano (Multibar) -->
+    <div class="dashboard-admin-chart-container">
+      <div class="dashboard-admin-chart-header">
+        <div>
+          <div class="dashboard-admin-chart-title">Utilizadores por Plano</div>
+          <div class="dashboard-admin-chart-meta">Últimos 7 dias</div>
+        </div>
+      </div>
+      <div class="dashboard-admin-chart-body">
+        <div id="dashboard-users-by-plan-chart" class="dashboard-admin-loading">A carregar…</div>
+      </div>
+      <div class="dashboard-admin-chart-legend">
+        <div class="dashboard-admin-legend-item">
+          <div class="dashboard-admin-legend-color premium"></div>
+          <span>Premium</span>
+        </div>
+        <div class="dashboard-admin-legend-item">
+          <div class="dashboard-admin-legend-color pro"></div>
+          <span>Pro</span>
+        </div>
+        <div class="dashboard-admin-legend-item">
+          <div class="dashboard-admin-legend-color trial"></div>
+          <span>Trial</span>
+        </div>
+        <div class="dashboard-admin-legend-item">
+          <div class="dashboard-admin-legend-color expirado"></div>
+          <span>Expirado</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+      </div>
+
+      <!-- Users (search + list) -->
+      <div class="admin-panel" id="admin-panel-users">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:16px">
+          <div class="admin-section-title" style="margin-bottom:0">Resumo</div>
+          <button class="admin-btn secondary" style="font-size:11px;padding:6px 12px;white-space:nowrap" onclick="AdminPanel.refreshDashboard()">
+            ⟳ Atualizar
+          </button>
+        </div>
+        
+        <div class="admin-stats" id="admin-users-summary-stats" style="margin-bottom:10px;">
+          <div class="admin-loading">A carregar…</div>
+        </div>
+
+        <div class="admin-divider"></div>
+        <div class="admin-section-title">Pesquisar Utilizador</div>
+        <div class="admin-search-row">
+          <input class="admin-input grow" id="admin-search-input" type="email"
+            placeholder="Email do utilizador…"
+            onkeydown="if(event.key==='Enter') AdminPanel.search()">
+          <button class="admin-btn" onclick="AdminPanel.search()">
+            <i class="ti ti-search"></i> Pesquisar
+          </button>
+        </div>
+        <div id="admin-search-result"></div>
+
+        <div class="admin-divider"></div>
+        <div class="admin-section-title">Todos os Utilizadores</div>
+        
+        <!-- Header da Tabela -->
+        <div class="admin-users-table-header">
+          <div class="admin-users-table-header-cell email">Email</div>
+          <div class="admin-users-table-header-cell plan">Plano</div>
+          <div class="admin-users-table-header-cell dias">Dias</div>
+          <div class="admin-users-table-header-cell estado">Estado</div>
+          <div class="admin-users-table-header-cell acoes">Ações</div>
+        </div>
+        
+        <div id="admin-all-users-list"><div class="admin-loading">A carregar…</div></div>
+      </div>
+
+      <!-- Logs -->
+      <div class="admin-panel" id="admin-panel-logs">
+        <div class="admin-section-title">Últimas 50 acções</div>
+        <div id="admin-logs-list"><div class="admin-loading">A carregar…</div></div>
+      </div>
+
+      <!-- FASE 2.7 — Conformidade -->
+      <div class="admin-panel" id="admin-panel-compliance">
+        <div id="admin-compliance-body">
+          <div class="admin-loading">A carregar dados de conformidade…</div>
+        </div>
+      </div>
+
+      <!-- Gerir Utilizador (Full Screen) -->
+      <div class="admin-panel" id="admin-panel-manage-user">
+        <div class="admin-manage-user-header">
+          <button class="admin-btn secondary" onclick="AdminPanel._closeManageUser()">
+            <i class="ti ti-arrow-left"></i> Voltar
+          </button>
+        </div>
+        <div id="admin-manage-user-content"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal de Assinatura — Korvex (via PaySuite)
+     ═══════════════════════════════════════════════════════════ -->
+<div id="renew-overlay" onclick="if(event.target===this)RenewPanel.close()">
+  <div class="renew-modal">
+    <div class="renew-close-row">
+      <div class="renew-title">Escolha seu plano</div>
+      <button class="renew-close" onclick="RenewPanel.close()"><i class="ti ti-x"></i></button>
+    </div>
+
+    <!-- STEP 1: Seleção de Plano -->
+    <div id="renew-step-plans" class="renew-step-active">
+      <div class="renew-step-subtitle">Escolha o plano ideal para o seu negócio</div>
+      
+      <div class="renew-plans-grid">
+        <!-- PRO CARD -->
+        <div class="renew-plan-card" id="renew-card-pro" onclick="RenewPanel.selectPlan('pro', this)">
+          <div class="renew-plan-header">
+            <div class="renew-plan-title">KORVEX PRO</div>
+          </div>
+          <div class="renew-plan-content">
+            <div class="renew-plan-price">
+              <span class="renew-price-value">800</span>
+              <span class="renew-price-currency">MT</span>
+              <span class="renew-price-period">/mês</span>
+            </div>
+            <ul class="renew-plan-features">
+              <li><i class="ti ti-check"></i> 1 número WhatsApp</li>
+              <li><i class="ti ti-check"></i> IA desbloqueada</li>
+              <li><i class="ti ti-check"></i> 4M tokens IA</li>
+            </ul>
+            <button class="renew-plan-select-btn">
+              <i class="ti ti-circle"></i> Selecionar
+            </button>
+          </div>
+        </div>
+
+        <!-- PREMIUM CARD -->
+        <div class="renew-plan-card" id="renew-card-premium" onclick="RenewPanel.selectPlan('premium', this)">
+          <div class="renew-plan-header renew-premium-header">
+            <div class="renew-plan-badge">Mais Popular</div>
+            <div class="renew-plan-title">KORVEX PREMIUM</div>
+          </div>
+          <div class="renew-plan-content">
+            <div class="renew-plan-price">
+              <span class="renew-price-value">1500</span>
+              <span class="renew-price-currency">MT</span>
+              <span class="renew-price-period">/mês</span>
+            </div>
+            <ul class="renew-plan-features">
+              <li><i class="ti ti-check"></i> 2 números WhatsApp</li>
+              <li><i class="ti ti-check"></i> IA desbloqueada</li>
+              <li><i class="ti ti-check"></i> 10M tokens IA</li>
+            </ul>
+            <button class="renew-plan-select-btn">
+              <i class="ti ti-circle"></i> Selecionar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="renew-status-msg-plans" class="renew-status-msg"></div>
+
+      <div class="renew-actions-plans">
+        <button class="renew-primary-btn" id="renew-continue-btn" onclick="RenewPanel.goToPayment()" disabled>
+          Continuar para pagamento
+        </button>
+        <button class="renew-cancel-btn" onclick="RenewPanel.close()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Métodos de Pagamento -->
+    <div id="renew-step-payment" class="renew-step-hidden">
+      <div class="renew-step-subtitle" id="renew-payment-subtitle">Escolha o método de pagamento</div>
+      
+      <div class="renew-plan-summary" id="renew-plan-summary"></div>
+
+      <div class="renew-methods">
+        <div class="renew-methods-row">
+          <button class="renew-method-btn" data-method="mpesa" onclick="RenewPanel.selectMethod('mpesa',this)">M-Pesa</button>
+          <button class="renew-method-btn" data-method="emola" onclick="RenewPanel.selectMethod('emola',this)">E-Mola</button>
+          <button class="renew-method-btn renew-method-btn-disabled" disabled title="Em breve">Cartão <span class="renew-soon-badge">Em breve</span></button>
+        </div>
+      </div>
+
+      <div id="renew-status-msg" class="renew-status-msg"></div>
+
+      <div class="renew-actions">
+        <button class="renew-primary-btn" id="renew-submit-btn" onclick="RenewPanel.submit()" disabled>
+          <i class="ti ti-lock"></i> Confirmar pagamento
+        </button>
+        <button class="renew-cancel-btn" onclick="RenewPanel.goBackToPlan()">Voltar</button>
+      </div>
+    </div>
+
+    <div class="renew-support-line">
+      Precisa de ajuda? <a href="mailto:korvexsuporte@gmail.com">korvexsuporte@gmail.com</a>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay de Compra de Tokens -->
+<div id="token-purchase-overlay" onclick="if(event.target===this)TokenPurchasePanel.close()">
+  <div class="token-purchase-modal">
+    <div class="token-close-row">
+      <div class="token-title">Comprar Tokens IA</div>
+      <button class="token-close" onclick="TokenPurchasePanel.close()"><i class="ti ti-x"></i></button>
+    </div>
+
+    <div style="font-size:13px;color:var(--k-muted);padding:0 0 16px;text-align:center;line-height:1.5;margin-bottom:16px">
+      Escolha um pacote de tokens para continuar utilizando a Inteligência Artificial.
+    </div>
+
+    <div class="token-packages">
+      <div class="token-packages-title">Pacotes</div>
+      <div class="token-packages-grid">
+        <button class="token-package-btn" onclick="TokenPurchasePanel.selectPackage('tokens_2m',this)">
+          <div class="token-package-tokens">2 Milhões</div>
+          <div class="token-package-price">250 MT</div>
+        </button>
+        <button class="token-package-btn" onclick="TokenPurchasePanel.selectPackage('tokens_4m',this)">
+          <div class="token-package-tokens">4 Milhões</div>
+          <div class="token-package-price">450 MT</div>
+        </button>
+        <button class="token-package-btn" onclick="TokenPurchasePanel.selectPackage('tokens_8m',this)">
+          <div class="token-package-tokens">8 Milhões</div>
+          <div class="token-package-price">800 MT</div>
+        </button>
+      </div>
+    </div>
+
+    <div class="token-methods">
+      <div class="token-methods-title">Método de pagamento</div>
+      <div class="token-methods-row">
+        <button class="token-method-btn" onclick="TokenPurchasePanel.selectMethod('mpesa',this)">
+          M-Pesa
+        </button>
+        <button class="token-method-btn" onclick="TokenPurchasePanel.selectMethod('emola',this)">
+          E-Mola
+        </button>
+      </div>
+    </div>
+
+    <div id="token-status-msg" class="token-status-msg"></div>
+
+    <div class="token-actions">
+      <button class="renew-primary-btn" id="token-purchase-btn" onclick="TokenPurchasePanel.submit()">
+        <i class="ti ti-credit-card"></i> Comprar agora
+      </button>
+      <button class="token-cancel-btn" onclick="TokenPurchasePanel.close()">Cancelar</button>
+    </div>
+
+    <div class="renew-support-line">
+      Precisa de ajuda? <a href="mailto:korvexsuporte@gmail.com">korvexsuporte@gmail.com</a>
+    </div>
+  </div>
+</div>
+
+      Precisa de ajuda? <a href="mailto:korvexsuporte@gmail.com">korvexsuporte@gmail.com</a>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     ORDEM DE CARREGAMENTO DOS SCRIPTS — Korvex SPA
+     ─────────────────────────────────────────────────────────────
+     1. Infra da Landing (ScreenManager)
+        Não depende de Firebase/Auth/Dashboard. Define o mecanismo
+        de troca de tela e deve carregar antes de qualquer
+        componente que dispare eventos 'korvex:navigate'.
+
+     2. Componentes da Landing
+        Cada secção é independente das outras (não se importam
+        entre si); dependem apenas do ScreenManager (passo 1) para
+        navegação, nunca do Firebase/Auth directamente.
+        Ordem = ordem das secções no PLANO_FINAL.md.
+
+     3. Firebase SDK (compat)
+        Usado exclusivamente por Auth/Dashboard.
+
+     4. Korvex JS — Auth/Dashboard
+        Ordem interna pré-existente, inalterada (ver comentários
+        originais abaixo).
+     ═══════════════════════════════════════════════════════════ -->
+
+<!-- 1. Infra da Landing -->
+<script src="js/flight-recorder.js"></script>
+<script src="js/screen-manager.js"></script>
+
+<!-- 2. Componentes da Landing (ordem = PLANO_FINAL.md) -->
+<script src="components/navbar/Navbar.js"></script>
+<script src="components/hero/Hero.js"></script>
+<!-- futuros, na mesma ordem das secções:
+<script src="components/live-canvas/LiveCanvas.js"></script>
+<script src="components/problem/Problem.js"></script>
+<script src="components/solution/Solution.js"></script>
+<script src="components/how-it-works/HowItWorks.js"></script>
+<script src="components/inbox-section/InboxSection.js"></script>
+<script src="components/flow-builder-section/FlowBuilderSection.js"></script>
+<script src="components/analytics-section/AnalyticsSection.js"></script>
+<script src="components/pricing/Pricing.js"></script>
+<script src="components/faq/FAQ.js"></script>
+<script src="components/cta-final/CTAFinal.js"></script>
+<script src="components/footer/Footer.js"></script>
+-->
+
+<!-- 3. Chart.js — Professional Charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- 4. Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<!-- 5. Korvex JS — Auth/Dashboard — ordem de carregamento obrigatória -->
+<script src="js/firebase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/repository.js"></script>
+<script src="js/subscription.js"></script>
+<script src="js/dashboard-stats.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/dashboard-main.js"></script>
+<script src="js/flow-builder.js"></script>
+<script src="js/simulator.js"></script>
+<script src="js/publisher.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/terms.js"></script>
+<script src="js/connections.js"></script>
+<script src="js/inbox.js"></script>
+  <script src="js/clients.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/ia-module.js"></script>
+<script src="js/ia-view.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/app.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FASE 2.7 — Modal de Leitura dos Termos (SaaS profissional)
+     ═══════════════════════════════════════════════════════════ -->
+<div class="terms-modal-overlay" id="terms-modal-overlay">
+  <div class="terms-modal">
+    <div class="terms-modal-header">
+      <div class="terms-modal-header-left">
+        <div class="terms-modal-brand">
+          <i class="ti ti-shield-check" style="color:var(--k-accent);font-size:18px"></i>
+          <span>Korvex</span>
+        </div>
+        <div class="terms-modal-titles">
+          <div class="terms-modal-title" id="terms-modal-title">Termos de Uso</div>
+          <div class="terms-modal-ver">Versão 2026.1 · República de Moçambique</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="terms-search-wrap">
+          <i class="ti ti-search" style="color:var(--k-muted);font-size:12px"></i>
+          <input id="terms-search" class="terms-search-input" placeholder="Pesquisar..." autocomplete="off">
+        </div>
+        <button class="terms-modal-close" onclick="closeTermsModal()" id="terms-close-btn">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+    </div>
+    <div class="terms-modal-body">
+      <div class="terms-sidebar" id="terms-sidebar">
+        <!-- índice lateral gerado por JS -->
+      </div>
+      <div class="terms-content" id="terms-content">
+        <!-- conteúdo gerado por JS -->
+      </div>
+    </div>
+    <div class="terms-modal-footer" id="terms-modal-footer">
+      <div class="terms-footer-info">
+        <i class="ti ti-lock" style="color:var(--k-muted);font-size:12px"></i>
+        <span>Ao aceitar, confirma que leu e compreendeu integralmente este documento.</span>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="terms-btn-secondary" onclick="closeTermsModal()">Fechar</button>
+        <button class="terms-btn-primary" id="terms-accept-btn" onclick="acceptFromModal()" style="display:none">
+          <i class="ti ti-check"></i> Aceito
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Dashboard Admin Redesenhado v2.0 — Gráficos -->
+<script src="./js/dashboard-admin-redesign.js"></script>
+
+<!-- Dashboard Admin Redesenhado v2.0 — Integração -->
+<script src="./js/dashboard-admin-integration.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,178 @@
+/* ══════════════════════════════════════════════════════════════════════
+   Navbar — components/navbar/navbar.css
+   ────────────────────────────────────────────────────────────────────
+   Usa exclusivamente as variáveis do Design System já existentes em
+   css/app.css (--k-bg, --k-surface, --k-surface2, --k-border, --k-text,
+   --k-muted, --k-accent, --k-accent2). Nenhuma cor nova é introduzida.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.navbar{
+  position:fixed;
+  top:0; left:0; right:0;
+  z-index:100;
+  height:64px;
+  display:flex;
+  align-items:center;
+  background:transparent;
+  border-bottom:0.5px solid transparent;
+  transition:background .2s ease, border-color .2s ease;
+}
+
+.navbar--scrolled{
+  background:rgba(8,12,18,.86);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border-bottom:0.5px solid var(--k-border);
+}
+
+.navbar__container{
+  width:100%;
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+}
+
+/* ── Logo ── */
+.navbar__logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  text-decoration:none;
+  color:var(--k-text);
+  flex-shrink:0;
+}
+.navbar__logo-icon{
+  width:28px; height:28px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.navbar__logo-icon img{ width:100%; height:100%; object-fit:contain; display:block }
+.navbar__logo-text{ font-size:15px; font-weight:600; letter-spacing:.3px }
+
+/* ── Menu (links + acções) ── */
+.navbar__menu{
+  display:flex;
+  align-items:center;
+  gap:32px;
+  flex:1;
+  justify-content:flex-end;
+}
+.navbar__links{
+  display:flex;
+  align-items:center;
+  gap:28px;
+}
+.navbar__menu-item{
+  font-size:13px;
+  color:var(--k-muted);
+  text-decoration:none;
+  white-space:nowrap;
+  transition:color .15s ease;
+}
+.navbar__menu-item:hover,
+.navbar__menu-item:focus-visible{ color:var(--k-text) }
+
+/* ── Acções (botões) ── */
+.navbar__actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-shrink:0;
+}
+.navbar__btn{
+  font-family:inherit;
+  font-size:12px;
+  font-weight:500;
+  padding:8px 16px;
+  border-radius:8px;
+  cursor:pointer;
+  border:0.5px solid var(--k-border);
+  background:transparent;
+  color:var(--k-text);
+  transition:background .15s ease, border-color .15s ease, transform .1s ease;
+}
+.navbar__btn:hover{ background:var(--k-surface2) }
+.navbar__btn:active{ transform:translateY(1px) }
+.navbar__btn:focus-visible{ outline:2px solid var(--k-accent2); outline-offset:2px }
+
+.navbar__btn--ghost{ background:transparent }
+.navbar__btn--primary{
+  background:var(--k-accent);
+  border-color:var(--k-accent);
+  color:#fff;
+}
+.navbar__btn--primary:hover{ background:#0060cc }
+
+/* ── Toggle mobile (hamburger) ── */
+.navbar__toggle{
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  width:32px; height:32px;
+  background:transparent;
+  border:0.5px solid var(--k-border);
+  border-radius:8px;
+  cursor:pointer;
+  flex-shrink:0;
+}
+.navbar__toggle-bar{
+  width:16px; height:1.5px;
+  background:var(--k-text);
+  transition:transform .2s ease, opacity .2s ease;
+}
+.navbar--menu-open .navbar__toggle-bar:nth-child(1){ transform:translateY(5.5px) rotate(45deg) }
+.navbar--menu-open .navbar__toggle-bar:nth-child(2){ opacity:0 }
+.navbar--menu-open .navbar__toggle-bar:nth-child(3){ transform:translateY(-5.5px) rotate(-45deg) }
+
+/* ── Responsivo ── */
+@media (max-width: 1024px){
+  .navbar__menu{ gap:20px }
+  .navbar__links{ gap:18px }
+}
+
+@media (max-width: 768px){
+  .navbar__menu{
+    position:fixed;
+    top:64px; left:0; right:0;
+    flex-direction:column;
+    align-items:stretch;
+    gap:0;
+    background:var(--k-surface);
+    border-bottom:0.5px solid var(--k-border);
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .25s ease;
+  }
+  .navbar--menu-open .navbar__menu{ max-height:420px }
+
+  .navbar__links{
+    flex-direction:column;
+    align-items:stretch;
+    gap:0;
+  }
+  .navbar__menu-item{
+    padding:14px 24px;
+    border-bottom:0.5px solid var(--k-border);
+  }
+
+  .navbar__actions{
+    flex-direction:column;
+    align-items:stretch;
+    padding:16px 24px;
+    gap:10px;
+  }
+  .navbar__btn{ text-align:center }
+
+  .navbar__toggle{ display:flex }
+}
+
+@media (max-width: 480px){
+  .navbar__container{ padding:0 16px }
+  .navbar__logo-text{ font-size:14px }
+}

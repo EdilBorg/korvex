@@ -1,0 +1,114 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper: verifica se o utilizador autenticado existe na coleção admins ──
+    // Não usa emails hardcoded — qualquer UID presente em admins/{uid} é admin.
+    function isAdmin() {
+      return request.auth != null
+          && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // ── admins ───────────────────────────────────────────────────────────────
+    // Apenas admins podem ler/alterar outros admins.
+    // Escrita inicial permitida para auto-provisionamento do super_admin no login.
+    match /admins/{uid} {
+      allow read:   if isAdmin() || request.auth.uid == uid;
+      allow create: if isAdmin() || request.auth.uid == uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin()
+                    && resource.data.role != 'super_admin'; // protege super_admin
+    }
+
+    // ── workspaces ───────────────────────────────────────────────────────────
+    // Cada utilizador acede apenas ao seu próprio workspace.
+    // Admins podem ler/escrever qualquer workspace (para gestão de subscrições).
+    match /workspaces/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isAdmin();
+
+      match /subscription/{doc} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read, write: if isAdmin();
+      }
+
+      // ── inbox (FASE 4.0) ────────────────────────────────────────────────
+      // workspaces/{uid}/inbox/{phone} já estaria coberto pela regra
+      // genérica match /{subcollection}/{doc} abaixo (1 nível), mas fica
+      // explícito aqui por clareza — qualquer alteração futura à regra
+      // genérica não deve afectar a Inbox sem ser uma decisão deliberada.
+      match /inbox/{phone} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read, write: if isAdmin();
+      }
+
+      // ── settings/{doc} (workspace settings) ────────────────────────────
+      // Definições do workspace: workspaceName, botName, timezone, language.
+      // Apenas o próprio utilizador pode ler/escrever as suas definições.
+      match /settings/{doc} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read, write: if isAdmin();
+      }
+
+      // ── conversations/{phone}/messages (FASE 4.0) ───────────────────────
+      // Histórico de mensagens — 2 níveis de subcoleção, fora do alcance
+      // da regra genérica de 1 nível abaixo.
+      match /conversations/{phone}/messages/{messageId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read, write: if isAdmin();
+      }
+
+      // ── conversations/{phone}/events (Timeline da Inbox) ────────────────
+      // Eventos automáticos (gravados pelo servidor) e manuais (gravados
+      // pelo próprio dono do workspace a partir da página Inbox): cliente
+      // iniciou conversa, fluxo iniciado/terminado, humano assumiu,
+      // IA retomou, etiqueta adicionada, conversa arquivada, etc.
+      match /conversations/{phone}/events/{eventId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read, write: if isAdmin();
+      }
+
+      match /{subcollection}/{doc} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read, write: if isAdmin();
+      }
+    }
+
+    // ── admin_users ──────────────────────────────────────────────────────────
+    // Qualquer utilizador autenticado pode criar/actualizar o seu próprio registo.
+    // Apenas admins podem ler a lista completa, actualizar ou eliminar registos.
+    match /admin_users/{uid} {
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null && request.auth.uid == uid;
+      allow read:   if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── admin_logs ───────────────────────────────────────────────────────────
+    // Apenas admins podem ler e escrever logs administrativos.
+    match /admin_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ── admin_stats ──────────────────────────────────────────────────────────
+    // FASE 4.2 — Estatísticas reais do dashboard (utilizadores, subscrições,
+    // receita). Apenas admins podem ler ou escrever.
+    match /admin_stats/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    // ── flows (estrutura futura) ─────────────────────────────────────────────
+    match /flows/{flowId} {
+      allow read, write: if request.auth != null
+                         && resource.data.userId == request.auth.uid;
+      allow read, write: if isAdmin();
+    }
+
+    // ── connections (FASE 3.0) ────────────────────────────────────────────────
+    // Cada utilizador acede apenas às suas próprias conexões.
+    // Admins podem ler/escrever qualquer conexão (para suporte e gestão).
+    // Estrutura: workspaces/{uid}/connections/{channel}
+    // (Subcoleção dentro de workspaces já coberta pela regra acima)
+    // A regra abaixo é redundante mas deixada como referência explícita.
+  }
+}
