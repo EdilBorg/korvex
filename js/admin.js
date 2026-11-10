@@ -278,49 +278,29 @@ const AdminService = (() => {
   }
 
   // ── Extender dias ───────────────────────────────────────────────────
-  // FASE 4.3.1 — `source`: 'quick' (botões +30/+60/+90 = planos oficiais,
+  // FASE 4.2 — `source`: 'quick' (botões +30/+60/+90 = planos oficiais,
   // geram receita real) ou 'manual' (campo de dias manual, NUNCA gera receita).
-  // Atualização incremental O(1) — não faz rebuild
   async function extendDays(targetUid, targetEmail, days, reason, source) {
     if (!_validateAdmin()) return false;
     if (!reason || !reason.trim()) return 'reason';
     if (!days || days <= 0) return 'days';
-
-    // Ler estado anterior para determinar delta
-    const db = _db();
-    if (!db) return false;
-    const subBefore = await getSubByUid(targetUid);
-
     const ok = await SubscriptionService.extend(targetUid, days);
     if (ok) {
       const amount = (source === 'quick' && PLAN_PRICES[days]) ? PLAN_PRICES[days] : null;
       await _log(targetUid, targetEmail, `+${days} dias`, days, reason, amount);
       if (amount) await DashboardStatsService.incrementRevenue(amount);
-
-      // FASE 4.3.1 — Atualização incremental
-      // Se o usuário estava expirado e passa a ativo, ajustar breakdown
-      // Caso contrário, nenhuma mudança no breakdown (apenas expiração muda)
-      if (subBefore && subBefore.plan === 'suspended') {
-        // Era expirado, passa a ativo no seu plano original (ou pro se não souber)
-        const newPlan = subBefore.previousPlan || 'pro';
-        const delta = {};
-        delta.suspended = -1;
-        if (newPlan === 'trial') delta.trial = 1;
-        else if (newPlan === 'pro') delta.pro = 1;
-        else if (newPlan === 'premium' || newPlan === 'active') delta.premium = 1;
-        await DashboardStatsService.updateSubscriptionCountsIncremental(delta);
-      }
-      // Caso contrário, se era ativo, continua ativo — sem mudança no breakdown
+      // BUG 1 — recalcular estatísticas imediatamente após a alteração
+      await DashboardStatsService.updateSubscriptionCounts();
     }
     return ok;
   }
 
   // ── Remover dias ────────────────────────────────────────────────────
-  // FASE 4.3.1 — Atualização incremental O(1) — não faz rebuild
   async function removeDays(targetUid, targetEmail, days, currentDays, reason) {
     if (!_validateAdmin()) return false;
     if (!reason || !reason.trim()) return 'reason';
     if (!days || days <= 0) return 'days';
+    // BUG FIX 3.3.6 — protecção da conta admin
     if (_isSuperAdminEmail(targetEmail)) return 'protected';
     if (days > currentDays) return 'overflow';
     const db = _db();
@@ -330,30 +310,13 @@ const AdminService = (() => {
                     .collection('settings').doc('subscription');
       const snap = await ref.get();
       if (!snap.exists) return false;
-      const subData = snap.data();
-      const current = subData.expiresAt;
+      const current = snap.data().expiresAt;
       const newExpiry = current - days * 86400000;
-
-      // Determinar se vai expirar
-      const willExpire = newExpiry <= Date.now();
-      const plan = subData.plan || 'expired';
-
       await ref.set({ expiresAt: newExpiry, updatedAt: Date.now(),
                       daysRemaining: Math.max(0, Math.ceil((newExpiry - Date.now()) / 86400000)) }, { merge: true });
       await _log(targetUid, targetEmail, `-${days} dias`, -days, reason);
-
-      // FASE 4.3.1 — Atualização incremental
-      if (willExpire && plan !== 'suspended') {
-        // Passa a expirado
-        const delta = {};
-        if (plan === 'trial') delta.trial = -1;
-        else if (plan === 'pro') delta.pro = -1;
-        else if (plan === 'premium' || plan === 'active') delta.premium = -1;
-        delta.expired = 1;
-        await DashboardStatsService.updateSubscriptionCountsIncremental(delta);
-      }
-      // Caso contrário, apenas a data muda, sem impacto no breakdown
-
+      // BUG 1 — recalcular estatísticas imediatamente (acção administrativa, sem impacto na receita)
+      await DashboardStatsService.updateSubscriptionCounts();
       return true;
     } catch(e) {
       console.error('[AdminService] removeDays:', e);
@@ -362,180 +325,87 @@ const AdminService = (() => {
   }
 
   // ── Activar conta (genérico) ────────────────────────────────────────
-  // FASE 4.3.1 — Atualização incremental O(1)
   async function activateAccount(targetUid, targetEmail, reason, plan = 'pro') {
     if (!_validateAdmin()) return false;
     if (!reason || !reason.trim()) return 'reason';
-    
-    const subBefore = await getSubByUid(targetUid);
-    const oldPlan = subBefore?.plan || 'expired';
-    
+    // Usar activatePlan com plano específico
     const ok = await SubscriptionService.activatePlan(targetUid, plan, 30);
     if (ok) {
       const planLabel = plan === 'trial' ? 'Trial' : plan === 'pro' ? 'Pro' : 'Premium';
       await _log(targetUid, targetEmail, `Plano ${planLabel} activado`, 30, reason);
-      
-      // FASE 4.3.1 — Calcular delta
-      const delta = {};
-      // Remover do plano antigo
-      if (oldPlan === 'trial') delta.trial = -1;
-      else if (oldPlan === 'pro') delta.pro = -1;
-      else if (oldPlan === 'premium' || oldPlan === 'active') delta.premium = -1;
-      else if (oldPlan === 'suspended') delta.suspended = -1;
-      else if (oldPlan === 'expired') delta.expired = -1;
-      
-      // Adicionar ao novo plano
-      if (plan === 'trial') delta.trial = (delta.trial || 0) + 1;
-      else if (plan === 'pro') delta.pro = (delta.pro || 0) + 1;
-      else if (plan === 'premium') delta.premium = (delta.premium || 0) + 1;
-      
-      await DashboardStatsService.updateSubscriptionCountsIncremental(delta);
+      await DashboardStatsService.updateSubscriptionCounts();
     }
     return ok;
   }
 
   // ── Activar Trial ────────────────────────────────────────────────────
-  // FASE 4.3.1 — Atualização incremental O(1)
   async function activateTrial(targetUid, targetEmail, reason) {
     if (!_validateAdmin()) return false;
     if (!reason || !reason.trim()) return 'reason';
-    
-    const subBefore = await getSubByUid(targetUid);
-    const oldPlan = subBefore?.plan || 'expired';
-    
     const ok = await SubscriptionService.activatePlan(targetUid, 'trial', 3);
     if (ok) {
       await _log(targetUid, targetEmail, 'Trial activado', 3, reason);
-      
-      // FASE 4.3.1 — Calcular delta
-      const delta = { trial: 1 };
-      if (oldPlan === 'pro') delta.pro = -1;
-      else if (oldPlan === 'premium' || oldPlan === 'active') delta.premium = -1;
-      else if (oldPlan === 'suspended') delta.suspended = -1;
-      else if (oldPlan === 'expired') delta.expired = -1;
-      
-      await DashboardStatsService.updateSubscriptionCountsIncremental(delta);
+      await DashboardStatsService.updateSubscriptionCounts();
     }
     return ok;
   }
 
   // ── Activar Pro ──────────────────────────────────────────────────────
-  // FASE 4.3.1 — Atualização incremental O(1)
   async function activatePro(targetUid, targetEmail, reason) {
     if (!_validateAdmin()) return false;
     if (!reason || !reason.trim()) return 'reason';
-    
-    const subBefore = await getSubByUid(targetUid);
-    const oldPlan = subBefore?.plan || 'expired';
-    
     const ok = await SubscriptionService.activatePlan(targetUid, 'pro', 30);
     if (ok) {
       await _log(targetUid, targetEmail, 'Pro activado', 30, reason);
-      
-      // FASE 4.3.1 — Calcular delta
-      const delta = { pro: 1 };
-      if (oldPlan === 'trial') delta.trial = -1;
-      else if (oldPlan === 'premium' || oldPlan === 'active') delta.premium = -1;
-      else if (oldPlan === 'suspended') delta.suspended = -1;
-      else if (oldPlan === 'expired') delta.expired = -1;
-      
-      await DashboardStatsService.updateSubscriptionCountsIncremental(delta);
+      await DashboardStatsService.updateSubscriptionCounts();
     }
     return ok;
   }
 
   // ── Activar Premium ──────────────────────────────────────────────────
-  // FASE 4.3.1 — Atualização incremental O(1)
   async function activatePremium(targetUid, targetEmail, reason) {
     if (!_validateAdmin()) return false;
     if (!reason || !reason.trim()) return 'reason';
-    
-    const subBefore = await getSubByUid(targetUid);
-    const oldPlan = subBefore?.plan || 'expired';
-    
     const ok = await SubscriptionService.activatePlan(targetUid, 'premium', 30);
     if (ok) {
       await _log(targetUid, targetEmail, 'Premium activado', 30, reason);
-      
-      // FASE 4.3.1 — Calcular delta
-      const delta = { premium: 1 };
-      if (oldPlan === 'trial') delta.trial = -1;
-      else if (oldPlan === 'pro') delta.pro = -1;
-      else if (oldPlan === 'suspended') delta.suspended = -1;
-      else if (oldPlan === 'expired') delta.expired = -1;
-      
-      await DashboardStatsService.updateSubscriptionCountsIncremental(delta);
+      await DashboardStatsService.updateSubscriptionCounts();
     }
     return ok;
   }
 
   // ── Suspender conta ─────────────────────────────────────────────────
-  // ── Suspender conta ─────────────────────────────────────────────────
-  // FASE 4.3.1 — Atualização incremental O(1)
   async function suspendAccount(targetUid, targetEmail, reason) {
     if (!_validateAdmin()) return false;
     if (!reason || !reason.trim()) return 'reason';
+    // BUG FIX 3.3.6 — protecção da conta admin
     if (_isSuperAdminEmail(targetEmail)) return 'protected';
-    
-    const subBefore = await getSubByUid(targetUid);
-    const oldPlan = subBefore?.plan || 'expired';
-    
     const ok = await SubscriptionService.suspend(targetUid);
     if (ok) {
       await _log(targetUid, targetEmail, 'Conta suspensa', null, reason);
-      
-      // FASE 4.3.1 — Calcular delta (planoPrior → suspended)
-      const delta = { suspended: 1 };
-      if (oldPlan === 'trial') delta.trial = -1;
-      else if (oldPlan === 'pro') delta.pro = -1;
-      else if (oldPlan === 'premium' || oldPlan === 'active') delta.premium = -1;
-      else if (oldPlan === 'admin') delta.admin = -1;
-      else if (oldPlan === 'expired') delta.expired = -1;
-      
-      await DashboardStatsService.updateSubscriptionCountsIncremental(delta);
+      await DashboardStatsService.updateSubscriptionCounts();
     }
     return ok;
   }
 
   // ── Expirar conta ───────────────────────────────────────────────────
-  // FASE 4.3.1 — Atualização incremental O(1)
   async function expireAccount(targetUid, targetEmail, reason) {
     if (!_validateAdmin()) return false;
     if (!reason || !reason.trim()) return 'reason';
+    // BUG FIX 3.3.6 — protecção da conta admin
     if (_isSuperAdminEmail(targetEmail)) return 'protected';
-    
-    const subBefore = await getSubByUid(targetUid);
-    const oldPlan = subBefore?.plan || 'expired';
-    
     const ok = await SubscriptionService.expire(targetUid);
     if (ok) {
       await _log(targetUid, targetEmail, 'Conta expirada', null, reason);
-      
-      // FASE 4.3.1 — Calcular delta (planoPrior → expired/suspended)
-      const delta = { expired: 1 };
-      if (oldPlan === 'trial') delta.trial = -1;
-      else if (oldPlan === 'pro') delta.pro = -1;
-      else if (oldPlan === 'premium' || oldPlan === 'active') delta.premium = -1;
-      else if (oldPlan === 'admin') delta.admin = -1;
-      else if (oldPlan === 'suspended') {
-        // Já estava suspenso, não muda breakdown
-        return ok;
-      }
-      
-      await DashboardStatsService.updateSubscriptionCountsIncremental(delta);
+      await DashboardStatsService.updateSubscriptionCounts();
     }
     return ok;
   }
 
   // ── Restaurar trial ─────────────────────────────────────────────────
-  // FASE 4.3.1 — Atualização incremental O(1)
   async function restoreTrial(targetUid, targetEmail, reason) {
     if (!_validateAdmin()) return false;
     if (!reason || !reason.trim()) return 'reason';
-    
-    const subBefore = await getSubByUid(targetUid);
-    const oldPlan = subBefore?.plan || 'expired';
-    
     const db = _db();
     if (!db) return false;
     try {
@@ -546,16 +416,7 @@ const AdminService = (() => {
               .set({ plan: 'trial', trialUsed: true, expiresAt,
                     updatedAt: now, daysRemaining: 3 }, { merge: true });
       await _log(targetUid, targetEmail, 'Trial restaurado', 3, reason);
-      
-      // FASE 4.3.1 — Calcular delta (planoPrior → trial)
-      const delta = { trial: 1 };
-      if (oldPlan === 'pro') delta.pro = -1;
-      else if (oldPlan === 'premium' || oldPlan === 'active') delta.premium = -1;
-      else if (oldPlan === 'admin') delta.admin = -1;
-      else if (oldPlan === 'suspended') delta.suspended = -1;
-      else if (oldPlan === 'expired') delta.expired = -1;
-      
-      await DashboardStatsService.updateSubscriptionCountsIncremental(delta);
+      await DashboardStatsService.updateSubscriptionCounts();
       return true;
     } catch(e) {
       console.error('[AdminService] restoreTrial:', e);
@@ -683,15 +544,14 @@ const AdminPanel = (() => {
     list.innerHTML = '<div class="admin-loading">A carregar lista…</div>';
 
     try {
-      // ARQUITETURA 4.3: Dashboard SEMPRE usa getStats() (leitura rápida)
-      // forceRefresh=true: admin clica botão "Actualizar" explicitamente
-      // Ambos os casos leem APENAS admin_stats/current (1 documento)
-      // Nenhuma varredura de admin_users, nenhum loop de subscriptions
+      // PERF FIX: getStats() lê admin_stats/current (1 documento) em vez de
+      // varrer toda a colecção. Só usa refreshStats() se o admin pedir
+      // explicitamente (botão "Actualizar") ou se não houver dados guardados.
       const stats = forceRefresh
         ? await DashboardStatsService.refreshStats()
         : await DashboardStatsService.getStats();
 
-      const b = stats.breakdown || { trial: 0, pro: 0, premium: 0, expired: 0, suspended: 0, admin: 0 };
+      const b = stats.breakdown || { trial: 0, pro: 0, premium: 0, expired: 0, suspended: 0 };
       b.active = (b.active || 0) + (b.premium || 0);
 
       const updatedAt = stats.updatedAt ? _fmtDateTime(stats.updatedAt) : '—';
@@ -1215,23 +1075,8 @@ const AdminPanel = (() => {
 })();
 
 /* ══════════════════════════════════════════════════════════════════════
-   FASE 4.3.1 — Nota sobre Sincronização
-
-   REMOVIDO: AdminStatsSyncService (setInterval periódico)
-
-   RAZÃO: A consistência de admin_stats/current agora é mantida pelas
-   próprias operações que alteram os dados (updateSubscriptionCountsIncremental).
-   Não há mais necessidade de sincronização em background ou dependência
-   do frontend estar aberto para manter o sistema consistente.
-
-   Validação de consistência está disponível via:
-     await DashboardStatsService.validateConsistency()
-   para testes/diagnósticos, mas não é usada em operação normal.
-   ════════════════════════════════════════════════════════════════════ */
-
-/* ══════════════════════════════════════════════════════════════════════
    FASE 3.4 — Dashboard de Subscrição + Renovação
-   ════════════════════════════════════════════════════════════════════ */
+   ══════════════════════════════════════════════════════════════════════ */
 
 // ── Checkout URL ────────────────────────────────────────────────────────
 // Deixar vazio até o link oficial do Paysuite estar disponível.
