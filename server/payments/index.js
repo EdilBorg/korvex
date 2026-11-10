@@ -1,3 +1,4 @@
+
 /* ══════════════════════════════════════════════════════════════════════
    server/payments/index.js — Orquestração de pagamentos Korvex ↔ PaySuite
    ────────────────────────────────────────────────────────────────────
@@ -24,10 +25,6 @@ const paysuite = require('./paysuite');
 const { TOKEN_PACKAGES } = require('../credits/tokenPackages');
 const creditManager = require('../credits/creditManager');
 const { PLANS, PLAN_CONFIG } = require('../plans');
-
-// Não há valor padrão — o plano deve ser sempre especificado
-let _PLAN_PRICE_MT = null;
-let _PLAN_DAYS = null;
 
 // Helper para obter preço e dias baseado no plano
 function _getPlanPriceAndDays(plan) {
@@ -84,18 +81,17 @@ async function startPayment({ uid, type, method, amount, metadata = {}, descript
   await paymentRef.set({
     id:        paymentId,
     uid,
-    type,      // tipo de pagamento
+    type,
     method:    method || null,
     amount,
     currency:  'MZN',
     status:    'pending',
     reference,
-    metadata:  metadata || {},  // packageId para tokens, etc
+    metadata:  metadata || {},
     createdAt: Date.now(),
     updatedAt: Date.now(),
   });
 
-  // Índice reference → uid
   await _paymentIndexRef(paymentId).set({ uid, paymentId, type, createdAt: Date.now() });
 
   const result = await paysuite.createPayment({
@@ -135,7 +131,7 @@ async function startSubscription({ uid, method, plan, description, returnUrl, ca
   if (!plan || !['pro', 'premium'].includes(plan)) {
     return { ok: false, error: `Plano obrigatório e deve ser 'pro' ou 'premium', recebido: ${plan}` };
   }
-  
+
   const planConfig = PLAN_CONFIG[plan];
   if (!planConfig) {
     return { ok: false, error: `Plano inválido: ${plan}` };
@@ -174,8 +170,6 @@ async function startTokenPurchase({ uid, method, packageId, returnUrl, callbackU
 
 /**
  * Activa a assinatura (PRO ou PREMIUM) com duração configurada.
- * plan: 'pro' | 'premium' (OBRIGATÓRIO — não tem fallback)
- * durationDays: dias de subscrição (padrão: 30 se omitido)
  */
 async function activateSubscription(uid, plan, durationDays = null) {
   if (!plan || !['pro', 'premium'].includes(plan)) {
@@ -192,11 +186,10 @@ async function activateSubscription(uid, plan, durationDays = null) {
     return false;
   }
 
-  // Se durationDays não for fornecido, usar o padrão da configuração do plano
   if (!durationDays) {
     durationDays = planConfig.durationDays;
   }
-  
+
   try {
     const expiresAt = Date.now() + durationDays * 24 * 60 * 60 * 1000;
     await ref.set({
@@ -207,12 +200,10 @@ async function activateSubscription(uid, plan, durationDays = null) {
       daysRemaining: durationDays,
     }, { merge: true });
 
-    // Inicializar créditos da IA quando a assinatura é ativada
     try {
       await creditManager.initializeCredits(uid, plan);
     } catch (e) {
       console.warn(`[Payments] Aviso ao inicializar créditos para ${uid}: ${e.message}`);
-      // Não falhar a ativação da assinatura se os créditos já existem
     }
 
     return true;
@@ -223,8 +214,7 @@ async function activateSubscription(uid, plan, durationDays = null) {
 }
 
 /**
- * Registra e aplica a compra de tokens
- * Tokens comprados são EXTRAS (extra_limit), não plano
+ * Registra e aplica a compra de tokens.
  */
 async function activateTokenPurchase(uid, packageId, tokens, value) {
   if (!_db) return false;
@@ -232,23 +222,20 @@ async function activateTokenPurchase(uid, packageId, tokens, value) {
     const workspaceRef = _db.collection('workspaces').doc(uid);
     const purchasesRef = _db.collection('workspaces').doc(uid).collection('ai_purchases');
 
-    // Registrar compra
     await purchasesRef.add({
       date: Date.now(),
       package: packageId,
       tokens,
       value,
-      method: 'paysuite',  // será atualizado pelo webhook com método real
+      method: 'paysuite',
       status: 'approved',
       createdAt: new Date().toISOString(),
     });
 
-    // Aumentar extra_limit (nunca aumentar monthly_limit — é imutável)
-    // Tokens comprados são créditos extras que NÃO expiram e NÃO resetam
     const snap = await workspaceRef.get();
     const current = snap.exists ? snap.data() : {};
     const aiCredits = current.ai_credits || {};
-    
+
     const newExtraLimit = (aiCredits.extra_limit || 0) + tokens;
 
     await workspaceRef.set({
@@ -267,9 +254,7 @@ async function activateTokenPurchase(uid, packageId, tokens, value) {
 }
 
 /**
- * Processa um evento de webhook já validado
- * type: 'payment.success' | 'payment.failed'
- * reference: paymentId
+ * Processa um evento de webhook já validado.
  */
 async function handleWebhookEvent({ type, reference, transactionId, raw }) {
   if (!reference) {
@@ -281,6 +266,7 @@ async function handleWebhookEvent({ type, reference, transactionId, raw }) {
   if (!idxSnap.exists) {
     return { ok: false, error: `Pagamento não encontrado para reference: ${reference}` };
   }
+
   const { uid, type: paymentType } = idxSnap.data();
   const paymentId = reference;
 
@@ -298,13 +284,13 @@ async function handleWebhookEvent({ type, reference, transactionId, raw }) {
       webhookRaw: raw || null,
     }, { merge: true });
 
-    // Ativar assinatura ou tokens conforme o tipo
     if (paymentType === 'subscription') {
       const { plan } = payment.metadata || {};
       if (!plan || !['pro', 'premium'].includes(plan)) {
         console.error(`[Payments] Webhook: plano inválido para subscrição: ${plan}`);
         return { ok: false, error: `Plano inválido no pagamento: ${plan}` };
       }
+
       const durationDays = PLAN_CONFIG[plan]?.durationDays || 30;
       await activateSubscription(uid, plan, durationDays);
     } else if (paymentType === 'token_purchase') {
@@ -330,23 +316,7 @@ async function handleWebhookEvent({ type, reference, transactionId, raw }) {
 }
 
 /**
- * ══════════════════════════════════════════════════════════════════════
- * DEV MOCK — substitui temporariamente a PaySuite durante o desenvolvimento
- * ──────────────────────────────────────────────────────────────────────
- * Usado apenas por POST /dev/mark-paid (server/index.js), que por sua vez
- * só regista essa rota quando NODE_ENV === 'development' (ver index.js).
- * Esta função NUNCA deve ser chamada a partir de código de produção.
- *
- * Simula o mesmo resultado que handleWebhookEvent() produz quando a
- * PaySuite confirma um payment.success:
- *   1. cria um registo em workspaces/{uid}/payments (para aparecer na
- *      faturação do painel admin, exactamente como um pagamento real)
- *   2. activa a assinatura Premium por 30 dias (mesma função que o
- *      webhook real usa — activateSubscription)
- *
- * Cobre tanto uma conta em trial como uma assinatura expirada/suspensa:
- * activateSubscription() escreve sempre { plan: 'premium', expiresAt,
- * daysRemaining: 30 }, independentemente do estado anterior.
+ * DEV MOCK — substitui temporariamente a PaySuite durante o desenvolvimento.
  */
 async function devMarkPaid({ uid, method, plan = PLANS.PREMIUM }) {
   if (!uid) return { ok: false, error: 'uid em falta.' };
@@ -372,12 +342,13 @@ async function devMarkPaid({ uid, method, plan = PLANS.PREMIUM }) {
     amount:        planConfig.priceInMT,
     currency:      'MZN',
     status:        'success',
-    reference:     paymentId, // alfanumérico, mesmo esquema do fluxo real
+    reference:     paymentId,
     transactionId: `DEVMOCK${paymentId}`,
-    devMock:       true, // sinaliza claramente na faturação que não é um pagamento real
+    devMock:       true,
     createdAt:     now,
     updatedAt:     now,
   });
+
   await _paymentIndexRef(paymentId).set({ uid, paymentId, createdAt: now });
 
   await activateSubscription(uid, plan, planConfig.durationDays);
@@ -392,22 +363,7 @@ async function devMarkPaid({ uid, method, plan = PLANS.PREMIUM }) {
 }
 
 /**
- * ══════════════════════════════════════════════════════════════════════
- * DEV — confirmar manualmente um pagamento REAL criado na PaySuite
- * ──────────────────────────────────────────────────────────────────────
- * Usado apenas por POST /dev/confirm-payment (server/index.js), que só
- * regista essa rota quando NODE_ENV === 'development'.
- *
- * Diferença para devMarkPaid: aqui o pagamento e o checkout_url são
- * 100% reais (vieram de startSubscription → PaySuite). A ÚNICA parte
- * simulada é a confirmação — porque em produção isso chegaria via
- * webhook payment.success, e o teu servidor local não tem URL pública
- * para a PaySuite conseguir chamar. Este endpoint faz o papel desse
- * webhook manualmente, para o mesmo registo de pagamento que já existe.
- *
- * Quando lançares em produção com um callback_url público real, deixas
- * de precisar disto — o webhook real (POST /payments/webhook) trata de
- * tudo sozinho, sem tocar neste endpoint.
+ * DEV — confirmar manualmente um pagamento REAL criado na PaySuite.
  */
 async function devConfirmPayment({ uid, paymentId, plan = PLANS.PREMIUM }) {
   if (!uid) return { ok: false, error: 'uid em falta.' };
@@ -428,7 +384,7 @@ async function devConfirmPayment({ uid, paymentId, plan = PLANS.PREMIUM }) {
 
   await paymentRef.set({
     status:     'success',
-    devMock:    true, // a confirmação foi simulada — o resto do registo é real
+    devMock:    true,
     updatedAt:  Date.now(),
   }, { merge: true });
 
@@ -447,7 +403,5 @@ module.exports = {
   handleWebhookEvent,
   devMarkPaid,
   devConfirmPayment,
-  PLAN_PRICE_MT,
-  PLAN_DAYS,
   TOKEN_PACKAGES,
 };
