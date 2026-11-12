@@ -239,16 +239,13 @@ const Hero = (() => {
     el.className = 'hero-demo__typing';
     el.setAttribute('role', 'status');
     el.setAttribute('aria-live', 'polite');
-    const label = document.createElement('span');
-    label.className = 'hero-demo__typing-label';
-    label.textContent = 'Korvex está a escrever…';
+    el.setAttribute('aria-label', 'Korvex está a escrever');
     const dots = document.createElement('span');
     dots.className = 'hero-demo__typing-dots';
     dots.setAttribute('aria-hidden', 'true');
     for (let i = 0; i < 3; i++) {
       dots.appendChild(document.createElement('span'));
     }
-    el.appendChild(label);
     el.appendChild(dots);
     container.appendChild(el);
     requestAnimationFrame(() => el.classList.add('hero-demo__typing--show'));
