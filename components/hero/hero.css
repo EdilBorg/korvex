@@ -132,7 +132,7 @@
     cabeçalho + toolbar + fluxo). Reservada desde o primeiro frame
     para a altura exterior não variar durante a animação.
   */
-  --hero-demo-h: 640px;
+  --hero-demo-h: 580px;
   height: var(--hero-demo-h);
   min-height: var(--hero-demo-h);
   max-height: var(--hero-demo-h);
@@ -298,10 +298,10 @@
 }
 
 .hero-demo__chat-body{
-  padding:14px;
+  padding:12px;
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:8px;
   flex:1 1 auto;
   min-height:0;
   /* Espaço reservado pelo painel — sem scrollbar interna */
@@ -317,10 +317,10 @@
 
 .hero-demo__msg{
   max-width:88%;
-  padding:10px 12px;
-  border-radius:12px;
-  font-size:13px;
-  line-height:1.45;
+  padding:8px 10px;
+  border-radius:10px;
+  font-size:12.5px;
+  line-height:1.4;
   color:var(--k-text);
   opacity:0;
   transform:translateY(8px);
@@ -337,7 +337,7 @@
 
 .hero-demo__time{
   display:block;
-  margin-top:5px;
+  margin-top:4px;
   font-size:10px;
   color:var(--k-muted);
   text-align:right;
@@ -366,10 +366,10 @@
   align-self:flex-end;
   display:inline-flex;
   align-items:center;
-  gap:8px;
+  gap:6px;
   max-width:88%;
-  padding:10px 12px;
-  border-radius:12px;
+  padding:8px 10px;
+  border-radius:10px;
   border-bottom-right-radius:4px;
   background:rgba(0,120,240,.12);
   border:0.5px solid rgba(0,120,240,.25);
@@ -384,7 +384,7 @@
 }
 
 .hero-demo__typing-label{
-  font-size:12px;
+  font-size:11.5px;
   color:var(--k-muted);
   font-style:italic;
   line-height:1.3;
@@ -454,8 +454,8 @@
   display:flex;
   align-items:center;
   gap:10px;
-  padding:11px 12px;
-  border-radius:11px;
+  padding:9px 11px;
+  border-radius:10px;
   border:0.5px solid var(--k-border);
   background:var(--k-surface2);
   transition:border-color .25s ease, background .25s ease, box-shadow .25s ease, opacity .25s ease;
@@ -577,7 +577,7 @@
   .hero{ padding:80px 24px 40px }
   .hero__headline{ font-size:34px }
   .hero__canvas-wrap{
-    --hero-demo-h: 600px;
+    --hero-demo-h: 560px;
   }
 }
 
@@ -587,7 +587,7 @@
   .hero__canvas-wrap{
     order:2;
     /* Empilhado: conversa + fluxo — altura para ambos sem scroll interno */
-    --hero-demo-h: 980px;
+    --hero-demo-h: 880px;
   }
   .hero-demo__panels{
     grid-template-columns:1fr;
@@ -611,6 +611,6 @@
   .hero-demo__msg{ font-size:12px; max-width:92% }
   .hero-demo__node-text{ font-size:12px }
   .hero__canvas-wrap{
-    --hero-demo-h: 920px;
+    --hero-demo-h: 840px;
   }
 }
