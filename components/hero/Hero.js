@@ -430,20 +430,19 @@ const Hero = (() => {
     document.addEventListener('visibilitychange', visibilityHandler);
 
     screenHandler = (ev) => {
-      const detail = ev && ev.detail;
-      const screen = detail && detail.screen;
-      if (screen === 'landing') {
+      const name = ev && ev.detail ? ev.detail.screen : null;
+      if (name === 'landing') {
         resumeDemo();
-      } else if (screen) {
+      } else {
         pauseDemo();
       }
     };
     document.addEventListener('korvex:screen-changed', screenHandler);
 
-    running = true;
+    introDone = false;
     scenarioIndex = 0;
     lastScenarioId = null;
-    introDone = false;
+    running = true;
     runScenario(root, 0);
   }
 
@@ -460,36 +459,43 @@ const Hero = (() => {
     }
   }
 
-  function bindCtas(root, content) {
-    const primary = root.querySelector('[data-hero-cta="primary"]');
-    const secondary = root.querySelector('[data-hero-cta="secondary"]');
-    if (primary) {
-      primary.addEventListener('click', () => {
-        document.dispatchEvent(
-          new CustomEvent('korvex:navigate', { detail: content.primaryCta.navigate })
-        );
+  function dispatchNavigate(payload) {
+    document.dispatchEvent(new CustomEvent('korvex:navigate', { detail: payload }));
+  }
+
+  function bindEvents(root, content) {
+    const ctaMap = {
+      primary: content.primaryCta.navigate,
+      secondary: content.secondaryCta.navigate,
+    };
+    root.querySelectorAll('[data-hero-cta]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-hero-cta');
+        const navigate = ctaMap[key];
+        if (navigate) dispatchNavigate(navigate);
       });
-    }
-    if (secondary) {
-      secondary.addEventListener('click', () => {
-        document.dispatchEvent(
-          new CustomEvent('korvex:navigate', { detail: content.secondaryCta.navigate })
-        );
-      });
-    }
+    });
+  }
+
+  function playEntranceAnimation(root) {
+    const heroEl = root.querySelector('#hero');
+    if (!heroEl) return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => heroEl.classList.add('hero--in'));
+    });
   }
 
   function mount() {
     const root = document.getElementById(MOUNT_ID);
-    if (!root) return;
-    root.innerHTML = template(HERO_CONTENT);
-    bindCtas(root, HERO_CONTENT);
-    const heroEl = root.querySelector('.hero');
-    if (heroEl) {
-      requestAnimationFrame(() => heroEl.classList.add('hero--in'));
+    if (!root) {
+      console.warn('[Hero] Container #' + MOUNT_ID + ' não encontrado.');
+      return;
     }
-    const demo = root.querySelector('.hero-demo');
-    if (demo) startDemo(demo);
+    stopDemo();
+    root.innerHTML = template(HERO_CONTENT);
+    bindEvents(root, HERO_CONTENT);
+    playEntranceAnimation(root);
+    startDemo(root);
   }
 
   return { mount, stopDemo };
