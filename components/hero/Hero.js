@@ -79,11 +79,12 @@ const Hero = (() => {
   ];
 
   const TIMING = {
-    msgIn: 1200,
-    identify: 1300,
-    respond: 2000,
-    complete: 1000,
-    hold: 2000,
+    msgIn: 1100,
+    identify: 1100,
+    typing: 1500,
+    respond: 900,
+    complete: 900,
+    hold: 1800,
     transition: 600,
   };
 
@@ -205,14 +206,29 @@ const Hero = (() => {
     return div;
   }
 
-  function showProcessing(container) {
+  function showTypingIndicator(container) {
     const el = document.createElement('div');
-    el.className = 'hero-demo__processing';
+    el.className = 'hero-demo__typing';
     el.setAttribute('aria-hidden', 'true');
-    el.innerHTML = '<span></span><span></span><span></span>';
+    const label = document.createElement('span');
+    label.className = 'hero-demo__typing-label';
+    label.textContent = 'Korvex está a escrever…';
+    const dots = document.createElement('span');
+    dots.className = 'hero-demo__typing-dots';
+    for (let i = 0; i < 3; i++) {
+      dots.appendChild(document.createElement('span'));
+    }
+    el.appendChild(label);
+    el.appendChild(dots);
     container.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('hero-demo__typing--show'));
     container.scrollTop = container.scrollHeight;
     return el;
+  }
+
+  function removeTypingIndicator(el) {
+    if (!el || !el.parentNode) return;
+    el.parentNode.removeChild(el);
   }
 
   function renderStaticScenario(root, scenario) {
@@ -252,6 +268,7 @@ const Hero = (() => {
     const d = demoEls(root);
     const t = TIMING;
     let elapsed = 0;
+    let typingEl = null;
 
     schedule(() => {
       if (!running) return;
@@ -266,10 +283,6 @@ const Hero = (() => {
       setConnState(root, 1, 'done');
       setNodeState(root, 2, 'active');
       if (d.intent) d.intent.textContent = 'A identificar intenção…';
-      const proc = showProcessing(d.messages);
-      schedule(() => {
-        if (proc && proc.parentNode) proc.parentNode.removeChild(proc);
-      }, t.identify - 200);
     }, elapsed);
 
     elapsed += t.identify;
@@ -279,15 +292,18 @@ const Hero = (() => {
       setConnState(root, 2, 'done');
       if (d.intent) d.intent.textContent = 'Intenção: ' + scenario.intent;
       setNodeState(root, 3, 'active');
+      typingEl = showTypingIndicator(d.messages);
     }, elapsed);
 
-    elapsed += Math.floor(t.respond * 0.35);
+    elapsed += t.typing;
     schedule(() => {
       if (!running) return;
+      removeTypingIndicator(typingEl);
+      typingEl = null;
       appendMessageSafe(d.messages, 'bot', scenario.bot, '09:42', scenario.humanHandoff);
     }, elapsed);
 
-    elapsed += Math.floor(t.respond * 0.65);
+    elapsed += t.respond;
     schedule(() => {
       if (!running) return;
       setNodeState(root, 3, 'done');
