@@ -24,3 +24,26 @@
 #landing-root{
   min-height:100%;
 }
+
+/* Scrollbar principal da landing — identidade Korvex (tokens --k-*) */
+#landing-screen{
+  scrollbar-width:thin;
+  scrollbar-color:var(--k-border) transparent;
+}
+#landing-screen::-webkit-scrollbar{
+  width:8px;
+}
+#landing-screen::-webkit-scrollbar-track{
+  background:transparent;
+}
+#landing-screen::-webkit-scrollbar-thumb{
+  background:var(--k-border);
+  border-radius:8px;
+  border:2px solid transparent;
+  background-clip:padding-box;
+}
+#landing-screen::-webkit-scrollbar-thumb:hover{
+  background:rgba(0,120,240,.45);
+  border:2px solid transparent;
+  background-clip:padding-box;
+}
