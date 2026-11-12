@@ -132,7 +132,7 @@
     cabeçalho + toolbar + fluxo). Reservada desde o primeiro frame
     para a altura exterior não variar durante a animação.
   */
-  --hero-demo-h: 555px;
+  --hero-demo-h: 545px;
   height: var(--hero-demo-h);
   min-height: var(--hero-demo-h);
   max-height: var(--hero-demo-h);
@@ -577,7 +577,7 @@
   .hero{ padding:80px 24px 40px }
   .hero__headline{ font-size:34px }
   .hero__canvas-wrap{
-    --hero-demo-h: 535px;
+    --hero-demo-h: 525px;
   }
 }
 
@@ -587,7 +587,7 @@
   .hero__canvas-wrap{
     order:2;
     /* Empilhado: conversa + fluxo — altura para ambos sem scroll interno */
-    --hero-demo-h: 850px;
+    --hero-demo-h: 840px;
   }
   .hero-demo__panels{
     grid-template-columns:1fr;
@@ -611,6 +611,6 @@
   .hero-demo__msg{ font-size:12px; max-width:92% }
   .hero-demo__node-text{ font-size:12px }
   .hero__canvas-wrap{
-    --hero-demo-h: 810px;
+    --hero-demo-h: 800px;
   }
 }
