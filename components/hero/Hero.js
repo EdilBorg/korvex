@@ -209,12 +209,14 @@ const Hero = (() => {
   function showTypingIndicator(container) {
     const el = document.createElement('div');
     el.className = 'hero-demo__typing';
-    el.setAttribute('aria-hidden', 'true');
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
     const label = document.createElement('span');
     label.className = 'hero-demo__typing-label';
     label.textContent = 'Korvex está a escrever…';
     const dots = document.createElement('span');
     dots.className = 'hero-demo__typing-dots';
+    dots.setAttribute('aria-hidden', 'true');
     for (let i = 0; i < 3; i++) {
       dots.appendChild(document.createElement('span'));
     }
