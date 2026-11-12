@@ -93,6 +93,8 @@ const Hero = (() => {
   let lastScenarioId = null;
   let introDone = false;
   let visibilityHandler = null;
+  let screenHandler = null;
+  let demoRoot = null;
 
   function clearTimers() {
     timers.forEach((id) => clearTimeout(id));
@@ -115,8 +117,8 @@ const Hero = (() => {
 
   function landingVisible() {
     const screen = document.getElementById('landing-screen');
-    if (!screen) return true;
-    if (screen.classList.contains('screen--hidden')) return false;
+    if (!screen) return false;
+    if (screen.classList.contains('hidden')) return false;
     if (document.hidden) return false;
     return true;
   }
@@ -237,7 +239,7 @@ const Hero = (() => {
   function runScenario(root, index) {
     if (!running || !root) return;
     if (!landingVisible()) {
-      schedule(() => runScenario(root, index), 1500);
+      pauseDemo();
       return;
     }
 
@@ -316,9 +318,26 @@ const Hero = (() => {
     }, elapsed);
   }
 
+  function pauseDemo() {
+    running = false;
+    clearTimers();
+  }
+
+  function resumeDemo() {
+    if (!demoRoot || prefersReducedMotion()) return;
+    if (!landingVisible()) return;
+    if (running) return;
+    running = true;
+    clearTimers();
+    schedule(() => {
+      if (!running || !demoRoot) return;
+      runScenario(demoRoot, scenarioIndex);
+    }, 200);
+  }
+
   function startDemo(root) {
     stopDemo();
-    running = true;
+    demoRoot = root;
 
     if (prefersReducedMotion()) {
       renderStaticScenario(root, SCENARIOS[0]);
@@ -327,17 +346,27 @@ const Hero = (() => {
 
     visibilityHandler = () => {
       if (document.hidden) {
-        clearTimers();
-      } else if (running && landingVisible()) {
-        clearTimers();
-        schedule(() => runScenario(root, scenarioIndex), 400);
+        pauseDemo();
+      } else if (landingVisible()) {
+        resumeDemo();
       }
     };
     document.addEventListener('visibilitychange', visibilityHandler);
 
+    screenHandler = (ev) => {
+      const name = ev && ev.detail ? ev.detail.screen : null;
+      if (name === 'landing') {
+        resumeDemo();
+      } else {
+        pauseDemo();
+      }
+    };
+    document.addEventListener('korvex:screen-changed', screenHandler);
+
     introDone = false;
     scenarioIndex = 0;
     lastScenarioId = null;
+    running = true;
     runScenario(root, 0);
   }
 
@@ -347,6 +376,10 @@ const Hero = (() => {
     if (visibilityHandler) {
       document.removeEventListener('visibilitychange', visibilityHandler);
       visibilityHandler = null;
+    }
+    if (screenHandler) {
+      document.removeEventListener('korvex:screen-changed', screenHandler);
+      screenHandler = null;
     }
   }
 
