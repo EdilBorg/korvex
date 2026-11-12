@@ -1,15 +1,15 @@
 /* ══════════════════════════════════════════════════════════════════════
    Hero — Landing Korvex (secção 02 do PLANO_FINAL.md)
-   ────────────────────────────────────────────────────────────────────
+   ───────────────────────────────────────────────────────────────────
    Foco: transformação (o problema real que o Korvex resolve), não
    lista de funcionalidades. Sem imagens, sem vídeos — apenas
    tipografia, layout e o Design System existente.
 
    Responsabilidades:
      • Renderizar o Hero dentro de #hero-root.
-     • Reservar, no lado direito, o container #hero-canvas-root para o
-       futuro componente Live Canvas (secção 03) — apenas o container,
-       sem nenhuma lógica ou conteúdo do Live Canvas em si.
+     • Preencher #hero-canvas-root com uma demonstração visual estática
+       (conversa de atendimento + fluxo de automação) — apenas HTML/CSS,
+       sem lógica de produto nem dependências externas.
      • Disparar CustomEvent('korvex:navigate') para os CTAs — mesma
        regra da Navbar: não conhece a implementação do Auth.
 
@@ -20,10 +20,6 @@
 const Hero = (() => {
   const MOUNT_ID = 'hero-root';
 
-  // ── Único ponto de configuração de texto do Hero ──────────────────
-  // Micro-benefícios reflectem capacidades reais e já implementadas do
-  // Korvex (motor de fluxos automático, flow builder visual, transição
-  // bot → humano na Inbox) — sem números inventados nem prova social.
   const HERO_CONTENT = {
     eyebrow: 'Para empresas que atendem clientes pelo WhatsApp',
 
@@ -95,10 +91,68 @@ const Hero = (() => {
           </div>
 
           <div class="hero__canvas-wrap">
-            <!-- Container reservado para o Live Canvas (secção 03).
-                 Implementação futura — apenas o container por agora. -->
             <div class="hero__canvas-dots" aria-hidden="true"></div>
-            <div id="hero-canvas-root" class="hero-canvas"></div>
+            <div id="hero-canvas-root" class="hero-canvas" role="img" aria-label="Demonstração: mensagem do cliente processada por um fluxo de automação e respondida automaticamente">
+              <div class="hero-demo">
+                <div class="hero-demo__chat">
+                  <div class="hero-demo__chat-head">
+                    <span class="hero-demo__chat-avatar" aria-hidden="true">K</span>
+                    <div class="hero-demo__chat-meta">
+                      <span class="hero-demo__chat-name">Atendimento Korvex</span>
+                      <span class="hero-demo__chat-status">Automático</span>
+                    </div>
+                  </div>
+                  <div class="hero-demo__chat-body">
+                    <div class="hero-demo__msg hero-demo__msg--in hero-demo__msg--1">
+                      <p>Olá, gostaria de saber os preços.</p>
+                      <span class="hero-demo__time">09:41</span>
+                    </div>
+                    <div class="hero-demo__msg hero-demo__msg--out hero-demo__msg--2">
+                      <p>Olá! Seja bem-vindo. Posso ajudar com informações sobre os nossos serviços.</p>
+                      <span class="hero-demo__time">09:41</span>
+                    </div>
+                    <div class="hero-demo__msg hero-demo__msg--in hero-demo__msg--3">
+                      <p>Quero fazer uma encomenda.</p>
+                      <span class="hero-demo__time">09:42</span>
+                    </div>
+                    <div class="hero-demo__msg hero-demo__msg--out hero-demo__msg--4">
+                      <p>Perfeito! Vou ajudar a registar o seu pedido.</p>
+                      <span class="hero-demo__time">09:42</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="hero-demo__bridge" aria-hidden="true">
+                  <span class="hero-demo__bridge-dot"></span>
+                  <span class="hero-demo__bridge-line"></span>
+                </div>
+
+                <div class="hero-demo__flow">
+                  <div class="hero-demo__flow-label">Fluxo de automação</div>
+                  <div class="hero-demo__nodes">
+                    <div class="hero-demo__node hero-demo__node--1">
+                      <span class="hero-demo__node-step">1</span>
+                      <span class="hero-demo__node-text">Mensagem recebida</span>
+                    </div>
+                    <div class="hero-demo__connector" aria-hidden="true"></div>
+                    <div class="hero-demo__node hero-demo__node--2">
+                      <span class="hero-demo__node-step">2</span>
+                      <span class="hero-demo__node-text">Identificar intenção</span>
+                    </div>
+                    <div class="hero-demo__connector" aria-hidden="true"></div>
+                    <div class="hero-demo__node hero-demo__node--3">
+                      <span class="hero-demo__node-step">3</span>
+                      <span class="hero-demo__node-text">Resposta automática</span>
+                    </div>
+                    <div class="hero-demo__connector" aria-hidden="true"></div>
+                    <div class="hero-demo__node hero-demo__node--4">
+                      <span class="hero-demo__node-step">4</span>
+                      <span class="hero-demo__node-text">Finalizar</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -125,11 +179,6 @@ const Hero = (() => {
     });
   }
 
-  /**
-   * Animação leve de entrada (CSS + JS): adiciona a classe 'hero--in'
-   * um instante depois do mount, para o CSS fazer a transição de
-   * opacidade/posição já definida em hero.css.
-   */
   function playEntranceAnimation(root) {
     const heroEl = root.querySelector('#hero');
     if (!heroEl) return;
@@ -138,10 +187,6 @@ const Hero = (() => {
     });
   }
 
-  /**
-   * Monta o Hero dentro de #hero-root.
-   * Idempotente: recria o innerHTML e religa os eventos a cada chamada.
-   */
   function mount() {
     const root = document.getElementById(MOUNT_ID);
     if (!root) {
