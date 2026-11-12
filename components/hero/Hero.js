@@ -29,63 +29,91 @@ const Hero = (() => {
     {
       id: 'precos',
       label: 'Consulta de preços',
-      client: 'Olá! Gostaria de saber os preços dos vossos serviços.',
-      bot: 'Olá! Claro. Que serviço gostaria de conhecer melhor?',
       intent: 'Consulta de preços',
       step3Label: 'Resposta automática',
       step3Icon: 'ti-message-chatbot',
       humanHandoff: false,
+      messages: [
+        { role: 'client', text: 'Olá! Gostaria de saber os preços dos vossos serviços.', time: '09:41' },
+        { role: 'bot', text: 'Olá! Claro. Que serviço gostaria de conhecer melhor?', time: '09:41' },
+        { role: 'client', text: 'O atendimento automático pelo WhatsApp.', time: '09:42' },
+        { role: 'bot', text: 'Perfeito. Posso enviar-lhe as opções disponíveis por aqui.', time: '09:42' },
+        { role: 'client', text: 'Sim, por favor.', time: '09:43' },
+      ],
     },
     {
       id: 'horario',
       label: 'Horário de atendimento',
-      client: 'Boa tarde. Até que horas fazem atendimento?',
-      bot: 'Boa tarde! Posso ajudar com informações sobre o nosso horário de atendimento.',
       intent: 'Consulta de horário',
       step3Label: 'Resposta automática',
       step3Icon: 'ti-message-chatbot',
       humanHandoff: false,
+      messages: [
+        { role: 'client', text: 'Boa tarde. Até que horas fazem atendimento?', time: '14:10' },
+        { role: 'bot', text: 'Boa tarde! Posso ajudar com informações sobre o nosso horário de atendimento.', time: '14:10' },
+        { role: 'client', text: 'Atendem também ao sábado?', time: '14:11' },
+        { role: 'bot', text: 'Sim. Posso registar a sua preferência de contacto para a equipa confirmar.', time: '14:11' },
+        { role: 'client', text: 'Obrigado, pode registar.', time: '14:12' },
+      ],
     },
     {
       id: 'local',
       label: 'Localização',
-      client: 'Olá! Onde fica a vossa loja?',
-      bot: 'Olá! Claro, posso ajudar com informações sobre a localização.',
       intent: 'Consulta de localização',
       step3Label: 'Resposta automática',
       step3Icon: 'ti-message-chatbot',
       humanHandoff: false,
+      messages: [
+        { role: 'client', text: 'Olá! Onde fica a vossa loja?', time: '11:05' },
+        { role: 'bot', text: 'Olá! Claro, posso ajudar com informações sobre a localização.', time: '11:05' },
+        { role: 'client', text: 'Quero a referência mais próxima do centro.', time: '11:06' },
+        { role: 'bot', text: 'Entendido. Vou preparar as indicações para si.', time: '11:06' },
+        { role: 'client', text: 'Perfeito, obrigado.', time: '11:07' },
+      ],
     },
     {
       id: 'agenda',
       label: 'Agendamento',
-      client: 'Gostaria de marcar um atendimento.',
-      bot: 'Com certeza! Que dia e horário seriam melhores para si?',
       intent: 'Agendamento',
       step3Label: 'Resposta automática',
       step3Icon: 'ti-message-chatbot',
       humanHandoff: false,
+      messages: [
+        { role: 'client', text: 'Gostaria de marcar um atendimento.', time: '16:20' },
+        { role: 'bot', text: 'Com certeza! Que dia e horário seriam melhores para si?', time: '16:20' },
+        { role: 'client', text: 'Amanhã de manhã, se possível.', time: '16:21' },
+        { role: 'bot', text: 'Certo. Vou registar o pedido de agendamento para confirmação.', time: '16:21' },
+        { role: 'client', text: 'Obrigado!', time: '16:22' },
+      ],
     },
     {
       id: 'humano',
       label: 'Atendimento humano',
-      client: 'Gostaria de falar com alguém da vossa equipa.',
-      bot: 'Claro! Vou encaminhar a sua conversa para a equipa de atendimento.',
       intent: 'Encaminhamento para atendimento humano',
       step3Label: 'Encaminhar para a equipa',
       step3Icon: 'ti-user-share',
       humanHandoff: true,
+      messages: [
+        { role: 'client', text: 'Gostaria de falar com alguém da vossa equipa.', time: '10:15' },
+        { role: 'bot', text: 'Claro! Vou encaminhar a sua conversa para a equipa de atendimento.', time: '10:15', handoff: true },
+        { role: 'client', text: 'É sobre um assunto já em curso.', time: '10:16' },
+        { role: 'bot', text: 'Percebido. A equipa vai continuar a partir deste histórico.', time: '10:16', handoff: true },
+        { role: 'client', text: 'Obrigado, aguardo contacto.', time: '10:17' },
+      ],
     },
   ];
 
   const TIMING = {
-    msgIn: 1100,
-    identify: 1100,
-    typing: 1500,
-    respond: 900,
-    complete: 900,
-    hold: 1800,
-    transition: 600,
+    msgIn: 900,
+    identify: 1000,
+    typing: 1400,
+    afterReply: 700,
+    clientFollow: 800,
+    typing2: 1200,
+    afterReply2: 700,
+    complete: 800,
+    hold: 1600,
+    transition: 550,
   };
 
   let timers = [];
@@ -238,8 +266,9 @@ const Hero = (() => {
     const d = demoEls(root);
     if (d.state) d.state.textContent = 'Concluído';
     if (d.intent) d.intent.textContent = 'Intenção: ' + scenario.intent;
-    appendMessageSafe(d.messages, 'client', scenario.client, '09:41', false);
-    appendMessageSafe(d.messages, 'bot', scenario.bot, '09:41', scenario.humanHandoff);
+    (scenario.messages || []).forEach((msg) => {
+      appendMessageSafe(d.messages, msg.role, msg.text, msg.time || '', !!msg.handoff);
+    });
     for (let i = 1; i <= 4; i++) setNodeState(root, i, 'done');
     for (let i = 1; i <= 3; i++) setConnState(root, i, 'done');
   }
@@ -271,10 +300,13 @@ const Hero = (() => {
     const t = TIMING;
     let elapsed = 0;
     let typingEl = null;
+    const msgs = scenario.messages || [];
 
     schedule(() => {
       if (!running) return;
-      appendMessageSafe(d.messages, 'client', scenario.client, '09:41', false);
+      if (msgs[0]) {
+        appendMessageSafe(d.messages, msgs[0].role, msgs[0].text, msgs[0].time || '', !!msgs[0].handoff);
+      }
       setNodeState(root, 1, 'active');
     }, elapsed);
 
@@ -302,12 +334,41 @@ const Hero = (() => {
       if (!running) return;
       removeTypingIndicator(typingEl);
       typingEl = null;
-      appendMessageSafe(d.messages, 'bot', scenario.bot, '09:42', scenario.humanHandoff);
+      if (msgs[1]) {
+        appendMessageSafe(d.messages, msgs[1].role, msgs[1].text, msgs[1].time || '', !!msgs[1].handoff);
+      }
     }, elapsed);
 
-    elapsed += t.respond;
+    elapsed += t.afterReply;
     schedule(() => {
       if (!running) return;
+      if (msgs[2]) {
+        appendMessageSafe(d.messages, msgs[2].role, msgs[2].text, msgs[2].time || '', !!msgs[2].handoff);
+      }
+    }, elapsed);
+
+    elapsed += t.clientFollow;
+    schedule(() => {
+      if (!running) return;
+      typingEl = showTypingIndicator(d.messages);
+    }, elapsed);
+
+    elapsed += t.typing2;
+    schedule(() => {
+      if (!running) return;
+      removeTypingIndicator(typingEl);
+      typingEl = null;
+      if (msgs[3]) {
+        appendMessageSafe(d.messages, msgs[3].role, msgs[3].text, msgs[3].time || '', !!msgs[3].handoff);
+      }
+    }, elapsed);
+
+    elapsed += t.afterReply2;
+    schedule(() => {
+      if (!running) return;
+      if (msgs[4]) {
+        appendMessageSafe(d.messages, msgs[4].role, msgs[4].text, msgs[4].time || '', !!msgs[4].handoff);
+      }
       setNodeState(root, 3, 'done');
       setConnState(root, 3, 'done');
       setNodeState(root, 4, 'active');
