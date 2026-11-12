@@ -277,7 +277,7 @@
   flex-direction:column;
   gap:10px;
   flex:1;
-  min-height:180px;
+  min-height:220px;
   overflow-y:auto;
   background:
     radial-gradient(ellipse at 10% 0%, rgba(0,120,240,.05), transparent 50%),
