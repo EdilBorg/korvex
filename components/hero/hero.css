@@ -285,7 +285,7 @@
   transition:opacity .35s ease;
 }
 
-.hero-demo__chat-body--fade{ opacity ind:.35 }
+.hero-demo__chat-body--fade{ opacity:.35 }
 
 .hero-demo__msg{
   max-width:88%;
