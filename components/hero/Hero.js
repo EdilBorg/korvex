@@ -7,9 +7,9 @@
 
    Responsabilidades:
      • Renderizar o Hero dentro de #hero-root.
-     • Preencher #hero-canvas-root com uma demonstração visual estática
-       (conversa de atendimento + fluxo de automação) — apenas HTML/CSS,
-       sem lógica de produto nem dependências externas.
+     • Preencher #hero-canvas-root com demonstração visual (conversa +
+       fluxo). O ciclo contínuo é CSS; com prefers-reduced-motion fica
+       estático. Sem dependências externas.
      • Disparar CustomEvent('korvex:navigate') para os CTAs — mesma
        regra da Navbar: não conhece a implementação do Auth.
 
@@ -135,17 +135,17 @@ const Hero = (() => {
                       <span class="hero-demo__node-step">1</span>
                       <span class="hero-demo__node-text">Mensagem recebida</span>
                     </div>
-                    <div class="hero-demo__connector" aria-hidden="true"></div>
+                    <div class="hero-demo__connector hero-demo__connector--1" aria-hidden="true"></div>
                     <div class="hero-demo__node hero-demo__node--2">
                       <span class="hero-demo__node-step">2</span>
                       <span class="hero-demo__node-text">Identificar intenção</span>
                     </div>
-                    <div class="hero-demo__connector" aria-hidden="true"></div>
+                    <div class="hero-demo__connector hero-demo__connector--2" aria-hidden="true"></div>
                     <div class="hero-demo__node hero-demo__node--3">
                       <span class="hero-demo__node-step">3</span>
                       <span class="hero-demo__node-text">Resposta automática</span>
                     </div>
-                    <div class="hero-demo__connector" aria-hidden="true"></div>
+                    <div class="hero-demo__connector hero-demo__connector--3" aria-hidden="true"></div>
                     <div class="hero-demo__node hero-demo__node--4">
                       <span class="hero-demo__node-step">4</span>
                       <span class="hero-demo__node-text">Finalizar</span>
