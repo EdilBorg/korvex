@@ -127,8 +127,12 @@
 .hero__canvas-wrap{
   position:relative;
   width:100%;
-  /* Altura exterior fixa e ocupada desde o início */
-  --hero-demo-h: min(560px, 62vh);
+  /*
+    Altura orientada ao conteúdo do cenário completo (5 mensagens +
+    cabeçalho + toolbar + fluxo). Reservada desde o primeiro frame
+    para a altura exterior não variar durante a animação.
+  */
+  --hero-demo-h: 640px;
   height: var(--hero-demo-h);
   min-height: var(--hero-demo-h);
   max-height: var(--hero-demo-h);
@@ -300,9 +304,8 @@
   gap:10px;
   flex:1 1 auto;
   min-height:0;
-  overflow-x:hidden;
-  overflow-y:auto;
-  overscroll-behavior:contain;
+  /* Espaço reservado pelo painel — sem scrollbar interna */
+  overflow:hidden;
   background:
     radial-gradient(ellipse at 10% 0%, rgba(0,120,240,.05), transparent 50%),
     var(--k-surface);
@@ -327,7 +330,7 @@
 
 .hero-demo__msg--show{
   opacity:1;
-  transform:translateY(0);
+  transform:none;
 }
 
 .hero-demo__msg p{ margin:0 }
@@ -574,7 +577,7 @@
   .hero{ padding:80px 24px 40px }
   .hero__headline{ font-size:34px }
   .hero__canvas-wrap{
-    --hero-demo-h: min(500px, 56vh);
+    --hero-demo-h: 600px;
   }
 }
 
@@ -583,10 +586,15 @@
   .hero__content{ max-width:none; order:1 }
   .hero__canvas-wrap{
     order:2;
-    --hero-demo-h: min(520px, 62vh);
+    /* Empilhado: conversa + fluxo — altura para ambos sem scroll interno */
+    --hero-demo-h: 980px;
   }
-  .hero-demo__panels{ grid-template-columns:1fr; min-height:0 }
-  .hero-demo__chat-body{ min-height:0 }
+  .hero-demo__panels{
+    grid-template-columns:1fr;
+    min-height:0;
+    grid-template-rows:minmax(0,1.15fr) minmax(0,0.95fr);
+  }
+  .hero-demo__chat-body{ min-height:0; overflow:hidden }
 }
 
 @media (max-width: 768px){
@@ -603,6 +611,6 @@
   .hero-demo__msg{ font-size:12px; max-width:92% }
   .hero-demo__node-text{ font-size:12px }
   .hero__canvas-wrap{
-    --hero-demo-h: min(480px, 58vh);
+    --hero-demo-h: 920px;
   }
 }
