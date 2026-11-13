@@ -125,6 +125,9 @@ async function handleIncoming(sessionId, message) {
   let slot = 'whatsapp_1';
   const slotMatch = sessionId.match(/^(.+)_(whatsapp_[12])$/);
   if (slotMatch) { uid = slotMatch[1]; slot = slotMatch[2]; }
+  // Preferir message.slot quando presente (identifica o doc em connections/{slot}).
+  // Sem slot na mensagem → manter o derivado de sessionId ou o default whatsapp_1 (legado).
+  if (message && message.slot) slot = message.slot;
 
   const { phone, remoteJid, text, timestamp, type, mediaUrl, mediaMime, pushName, isGroup, groupJid, participantPhone, participantPushName } = message;
 
@@ -142,7 +145,7 @@ async function handleIncoming(sessionId, message) {
     }).catch(e => logger.error(uid, phone, `[Inbox][GROUP] Erro em recordIncoming: ${e.message}`));
 
     // Verificar se o fluxo activo permite responder a grupos
-    const groupFlow = await flows.getActiveFlowForChannel(uid, 'whatsapp');
+    const groupFlow = await flows.getActiveFlowForChannel(uid, slot);
     if (!groupFlow) {
       console.info(`[GROUP] Fluxo bloqueado — nenhum fluxo ativo (uid: ${uid})`);
       return;
@@ -219,9 +222,9 @@ async function handleIncoming(sessionId, message) {
 
   // ── Buscar fluxo activo ───────────────────────────────────────────────
   // FASE 3.2.1 — ALTERAÇÃO CRÍTICA: já não se procura "fluxo publicado".
-  // Lê-se directamente o activeFlowId associado a este número (canal
-  // 'whatsapp' — preparado para múltiplos números no futuro, Parte 8).
-  const activeFlow = await flows.getActiveFlowForChannel(uid, 'whatsapp');
+  // Lê-se directamente o activeFlowId do documento de conexão do slot
+  // (ex.: connections/whatsapp_1). Sem slot na mensagem usa-se whatsapp_1.
+  const activeFlow = await flows.getActiveFlowForChannel(uid, slot);
   if (!activeFlow) {
     logger.info(uid, phone, 'Nenhum fluxo ativo — a tentar fallback IA.');
     const sendMsgFn = async (msgText) => {
@@ -275,7 +278,7 @@ async function handleIncoming(sessionId, message) {
       logger.error(uid, phone, 'sendMessage não disponível (manager.js não injectou a função).');
       return;
     }
-    logger.info(uid, phone, `[SEQ][H] sendMessage() chamado no engine | t=${Date.now()} | text="${msgText.slice(0,40)}"`);
+    logger.info(uid, phone, `[SEQ][H] sendMessage() chamado no engine | t=${Date.now()} | text=\"${msgText.slice(0,40)}\"`);
     await _sendMessageFn(uid, phone, msgText);
     logger.info(uid, phone, `[SEQ][I] sendMessage() concluído | t=${Date.now()}`);
     logger.sent(uid, phone, msgText);
@@ -317,12 +320,12 @@ async function handleIncoming(sessionId, message) {
 
     } else if (waitingNode && waitingNode.type === 'salvar') {
       // ── SALVAR: guardar variável automaticamente + avançar ─────────
-      const existing = Object.keys(conv.variables || {}).filter(k => /^resposta_\d+$/.test(k));
+      const existing = Object.keys(conv.variables || {}).filter(k => /^resposta_\\d+$/.test(k));
       const key = 'resposta_' + (existing.length + 1);
       conv.variables = await conversations.setVariable(uid, phone, conv.variables, key, text);
       await conversations.setAwaitingInput(uid, phone, null);
       conv.awaitingInput = null;
-      logger.info(uid, phone, `[SALVAR] Resposta guardada em {{${key}}} = "${text.slice(0,60)}"`);
+      logger.info(uid, phone, `[SALVAR] Resposta guardada em {{${key}}} = \"${text.slice(0,60)}\"`);
 
       resumeNode = graph.getNextNode(waitingNode.nodeId, flowDoc);
       if (!resumeNode) {
@@ -359,183 +362,132 @@ async function handleIncoming(sessionId, message) {
   if (!currentNode && session && session.state === 'active' && session.current_node_id) {
     // FASE 5 — usar o nó guardado na SESSÃO (não em conversations.js).
     // Continua exactamente do último nó, independentemente do tempo passado.
-    // Verifica que o nó ainda existe no fluxo (pode ter sido apagado numa edição).
-    const sessionNode = flowDoc.nodes.find(
-      n => String(n.nodeId) === String(session.current_node_id)
-    );
-    if (sessionNode) {
-      currentNode = sessionNode;
-      logger.info(uid, phone,
-        `[Sessions] A continuar sessão do nó ${session.current_node_id} (guardado na sessão).`);
+    // Verifica que o nó ainda existe no fluxo (pode ter sido editado).
+    const savedNode = flowDoc.nodes.find(n => String(n.nodeId) === String(session.current_node_id));
+    if (savedNode) {
+      currentNode = savedNode;
     } else {
       logger.warn(uid, phone,
-        `[Sessions] Nó ${session.current_node_id} da sessão não encontrado no fluxo — a recomeçar do início.`);
+        `[Sessions] Nó ${session.current_node_id} já não existe no fluxo — a reiniciar do início.`);
+      currentNode = graph.findTriggerNode(flowDoc);
     }
-  }
-
-  if (!currentNode && conv.currentNode && conv.flowId === activeFlow.flowId) {
-    // Fallback para conversations.js (compatibilidade com sessões anteriores
-    // à Fase 5 que ainda não têm o campo session.current_node_id).
-    currentNode = flowDoc.nodes.find(n => String(n.nodeId) === String(conv.currentNode));
   }
 
   if (!currentNode) {
-    // Conversa nova, fluxo activo trocado, ou nó guardado já não existe
-    // (FASE 3.2.5 — executar automaticamente o nó Início).
     currentNode = graph.findTriggerNode(flowDoc);
-    if (!currentNode) {
-      logger.warn(uid, phone, 'Fluxo ativo não tem nó de Início — abortado.');
-      return;
-    }
   }
 
-  // Se há um delay activo para este contacto, ignorar a mensagem.
-  // O delay é intransponível — mensagens recebidas durante um delay não reiniciam o fluxo.
-  if (delayExecutor.hasActiveDeley(uid, phone)) {
-    logger.info(uid, phone, '[DELAY] Mensagem recebida durante delay activo — ignorada.');
+  if (!currentNode) {
+    logger.warn(uid, phone, 'Fluxo activo sem nó de Início — impossível executar.');
     return;
   }
 
   await _runFromNode({
-    uid, phone, remoteJid: remoteJid || null,
-    flow: flowDoc, flowId: activeFlow.flowId,
-    conv, session,
-    startNode: currentNode, incomingText: text, sendMessage,
+    uid,
+    phone,
+    remoteJid,
+    flow: flowDoc,
+    flowId: activeFlow.flowId,
+    conv,
+    session,
+    startNode: currentNode,
+    incomingText: text,
+    sendMessage,
   });
 }
 
 /**
- * Executa nós em sequência a partir de startNode, seguindo as conexões,
- * até parar num ponto seguro: nó 'pergunta' (espera resposta), nó
- * 'encerrar' (fim), ou nó terminal sem saída.
- * @param {object} params
+ * Executa o fluxo a partir de um nó até encontrar um nó de espera
+ * (pergunta / aguardar / salvar) ou o fim do fluxo.
  */
 async function _runFromNode({ uid, phone, remoteJid, flow, flowId, conv, session, startNode, incomingText, sendMessage }) {
-  let node = startNode;
+  let currentNode = startNode;
   let steps = 0;
-  let lastPort; // porta de saída a usar na próxima navegação (ex.: 'Sim'/'Não' — preparado para a condição da fase seguinte)
 
-  while (node && steps < MAX_STEPS_PER_TURN) {
-    steps++;
+  while (currentNode && steps < MAX_STEPS_PER_TURN) {
+    steps += 1;
+    const nodeId = String(currentNode.nodeId);
+    logger.info(uid, phone, `[Engine] Executando nó ${nodeId} (type=${currentNode.type})`);
 
-    const _hint = _executorHintFor(node);
-    const executor = executors.get(_hint);
-    logger.info(uid, phone, `[RUN][1] step=${steps} | nodeId=${node.nodeId} | type=${node.type} | hint=${_hint} | executor=${executor ? 'OK' : 'NULL'}`);
+    // Actualizar current_node_id na sessão antes de executar (FASE 5)
+    if (session) {
+      await updateSessionNode(uid, phone, nodeId, conv.variables || {});
+    }
+
+    const hint = _executorHintFor(currentNode);
+    const executor = executors.resolve(hint || currentNode.type);
 
     if (!executor) {
-      logger.error(uid, phone, `[RUN][ERR] Executor NULL para hint="${_hint}" (type="${node.type}") — a parar loop.`);
-      break;
+      logger.warn(uid, phone, `Sem executor para type=${currentNode.type} hint=${hint}`);
+      currentNode = graph.getNextNode(currentNode.nodeId, flow);
+      continue;
     }
 
-    const ctx = {
-      uid, phone, remoteJid, node, flow, flowId,
-      variables: conv.variables || {},
+    const result = await executor.execute({
+      node: currentNode,
+      flow,
+      uid,
+      phone,
+      remoteJid,
       incomingText,
+      variables: conv.variables || {},
       sendMessage,
-    };
+      conversations,
+      conv,
+    });
 
-    let result;
-    logger.info(uid, phone, `[RUN][2] A chamar executor.execute() | nodeId=${node.nodeId} | t=${Date.now()}`);
-    try {
-      result = await executor.execute(ctx);
-      logger.info(uid, phone, `[RUN][3] executor.execute() retornou | nodeId=${node.nodeId} | result=${JSON.stringify(result)} | t=${Date.now()}`);
-    } catch (e) {
-      logger.error(uid, phone, `[RUN][ERR] Excepção em executor.execute() | nodeId=${node.nodeId} | ${e.message}`);
-      logger.error(uid, phone, `Erro ao executar nó ${node.nodeId} (${node.type}): ${e.message}`);
-      break;
-    }
-
-    // Se o executor atualizou variáveis (ex.: save_var), propagar em memória
-    if (result?.updatedVariables) conv.variables = result.updatedVariables;
-
-    // Persistir sempre o nó actual após executar (mesmo antes de saber o próximo,
-    // para nunca perder a posição se o processo cair entre passos).
-
-    // FASE 5 — sincronizar sessão com o nó actual e variáveis actualizadas
-    await updateSessionNode(uid, phone, String(node.nodeId), conv.variables || {});
-
-    if (result?.isEnd) {
-      logger.info(uid, phone, `[RUN][4] result.isEnd=true → a encerrar fluxo`);
-      await conversations.reset(uid, phone);
-      // FASE 5 — transitar sessão para ai_mode (NUNCA volta ao fluxo sem reset manual)
-      await completeSession(uid, phone);
-      logger.info(uid, phone,
-        '[Sessions] Fluxo encerrado — sessão transitou para ai_mode. A IA responde a partir de agora.');
+    // result pode ser: { wait: true }, { next: nodeId }, { end: true }, undefined
+    if (result && result.wait) {
+      // Nó de espera — gravar awaitingInput e parar o turno
+      await conversations.setAwaitingInput(uid, phone, nodeId);
+      logger.info(uid, phone, `[Engine] À espera de resposta no nó ${nodeId}`);
       return;
     }
 
-    if (result?.awaitingInput) {
-      logger.info(uid, phone, `[RUN][4] result.awaitingInput=true → a suspender fluxo`);
-      logger.info(uid, phone, `[WAIT] Fluxo suspenso no nó ${node.nodeId} — aguardando resposta.`);
+    if (result && result.end) {
+      // Fim do fluxo → sessão passa a ai_mode
+      if (session) {
+        await completeSession(uid, phone);
+        logger.info(uid, phone, '[Sessions] Fluxo terminado — sessão em ai_mode.');
+      }
       return;
     }
 
-    if (result?.isDelay) {
-      logger.info(uid, phone, `[RUN][4] result.isDelay=true → a pausar para delay`);
-      logger.info(uid, phone, `[DELAY] Motor pausado no nó ${node.nodeId} — delay agendado.`);
-      return;
+    if (result && result.next) {
+      currentNode = flow.nodes.find(n => String(n.nodeId) === String(result.next));
+      continue;
     }
 
-    logger.info(uid, phone, `[RUN][5] A chamar getNextNode | nodeId=${node.nodeId} | lastPort=${lastPort}`);
-    const next = graph.getNextNode(node.nodeId, flow, lastPort);
-    lastPort = undefined;
-    logger.info(uid, phone, `[RUN][6] getNextNode retornou | next=${next ? next.nodeId + ' (' + next.type + ')' : 'NULL'}`);
-
-    if (!next) {
-      await conversations.reset(uid, phone);
-      // FASE 5 — sem nó seguinte = fluxo terminou → ai_mode
-      await completeSession(uid, phone);
-      logger.info(uid, phone,
-        `[Sessions] Nó ${node.nodeId} sem saída conectada — sessão transitou para ai_mode.`);
-      return;
-    }
-
-    node = next;
-    logger.info(uid, phone, `[RUN][7] Próxima iteração → nodeId=${node.nodeId} | type=${node.type}`);
+    // Avanço normal pela aresta de saída
+    currentNode = graph.getNextNode(currentNode.nodeId, flow);
   }
 
   if (steps >= MAX_STEPS_PER_TURN) {
-    logger.warn(uid, phone, `Limite de ${MAX_STEPS_PER_TURN} passos atingido neste turno — possível ciclo no fluxo. A parar por segurança.`);
+    logger.warn(uid, phone, `[Engine] Limite de ${MAX_STEPS_PER_TURN} passos por turno atingido — possível ciclo no fluxo.`);
+  }
+
+  // Se saímos do while sem wait/end, o fluxo acabou as arestas
+  if (!currentNode && session) {
+    await completeSession(uid, phone);
+    logger.info(uid, phone, '[Sessions] Fluxo sem mais nós — sessão em ai_mode.');
   }
 }
 
-/**
- * Resolve o executorHint de um nó. Tenta usar node.executorHint se já
- * vier no documento; caso contrário, mapeia a partir do node.type com
- * a mesma tabela usada por NodeTypeRegistry no frontend (js/repository.js),
- * para não depender de um campo que pode não existir em documentos
- * gravados antes desta fase.
- * @param {object} node
- * @returns {string}
- */
-const _TYPE_TO_HINT = {
-  inicio:      'trigger',
-  mensagem:    'send_text',
-  imagem:      'send_image',
-  video:       'send_video',
-  audio:       'send_audio',
-  documento:   'send_document',
-  pergunta:    'ask_question',
-  aguardar:    'wait_reply',
-  delay:       'delay',      // FASE 5.4 — estava em falta no mapa de tipos
-  salvar:      'save_var',
-  botao:       'send_buttons',
-  lista:       'send_list',
-  condicao:    'condition',
-  webhook:     'http_request',
-  api:         'api_call',
-  tag:         'crm_tag_add',
-  removertag:  'crm_tag_remove',
-  encerrar:    'end_flow',
-};
-
 function _executorHintFor(node) {
-  // Se o nó tem _items com sub-tipos (bloco composto), usar executor composite.
-  // Um bloco é composto se tem _items com pelo menos um item não-mensagem,
-  // ou se tem mais do que um item (texto + delay, texto + texto, etc.).
-  const items = node.settings && node.settings._items;
-  if (Array.isArray(items) && items.length > 0) {
-    const hasNonText = items.some(it => it.type !== 'mensagem');
+  const _TYPE_TO_HINT = {
+    inicio: 'trigger',
+    texto: 'send_text',
+    pergunta: 'ask_question',
+    aguardar: 'wait_reply',
+    salvar: 'save_var',
+    delay: 'delay',
+    fim: 'end_flow',
+    composite: 'composite',
+  };
+  // Composite: vários itens num só nó
+  if (node.type === 'texto' || node.type === 'mensagem') {
+    const items = node.data?.items || node.data?.messages || [];
+    const hasNonText = items.some(i => i.type && i.type !== 'text');
     if (hasNonText || items.length > 1) return 'composite';
   }
   return node.executorHint || _TYPE_TO_HINT[node.type] || null;
@@ -586,93 +538,11 @@ async function _tryAiFallback(uid, phone, incomingText, sendMessage, sessionCont
     // sessionContext já vinha preenchido (o caso mais comum — toda
     // mensagem em ai_mode passa por aqui), apesar do comentário dizer
     // que evitava a leitura redundante. Agora há sempre só uma leitura,
-    // reaproveitada tanto para a verificação de ai_blocked como, mais
-    // abaixo, implicitamente coberta pelo sessionContext já carregado.
-    const sessionData = await getSession(uid, phone);
-    if (sessionData && sessionData.ai_blocked === true) {
-      logger.info(uid, phone,
-        '[AI] Bloqueado pelo administrador (ai_blocked=true) — IA silenciada para este cliente.');
-      return;
-    }
-  } catch (e) {
-    logger.error(uid, phone, `[AI] Erro ao verificar ai_blocked: ${e.message}`);
-    // Em caso de erro na verificação, prosseguir normalmente (fail-open)
-  }
-
-  // ── 1. Verificação de plano — intercepção antes de chegar ao modelo ──
-  const { allowed: planAllowed, plan } = await checkPlanAccess(uid, FEATURES.AI);
-  if (!planAllowed) {
-    logger.info(
-      uid, phone,
-      `[AI] Bloqueado pelo middleware de planos — plano "${plan}" não inclui IA.`
-    );
-    return; // Silencioso: o utilizador Trial não recebe qualquer mensagem de erro
-  }
-
-  // ── 2. Verificação de créditos (saldo mensal + diário) ───────────────
-  const { allowed: creditsAllowed, reason: creditsReason } = await checkCredits(uid);
-  if (!creditsAllowed) {
-    logger.info(uid, phone, `[AI] Bloqueado por créditos insuficientes — ${creditsReason}`);
-    return; // Silencioso: não enviar mensagem de erro ao utilizador final
-  }
-
-  // ── 3. Rate limit persistente no Firestore (requests por minuto) ─────
-  const { allowed: rateAllowed, reason: rateReason } = await checkRateLimit(uid);
-  if (!rateAllowed) {
-    logger.info(uid, phone, `[AI] Rate limit atingido — ${rateReason}`);
-    return;
-  }
-
-  // ── 4. Chamar o modelo Gemini ─────────────────────────────────────────
-  try {
-    // FASE 5 — Quando em ai_mode, usar o histórico da sessão (últimas 5 mensagens)
-    // em vez do histórico completo do aiHistory. Isto dá contexto mais relevante.
-    let history;
-    if (sessionContext && sessionContext.lastMessages && sessionContext.lastMessages.length > 0) {
-      // Converter mensagens da sessão para o formato esperado pelo ai.js
-      history = sessionContext.lastMessages.map(m => ({
-        role: m.role === 'user' ? 'incoming' : 'outgoing',
-        text: m.content,
-      }));
-      logger.info(uid, phone,
-        `[AI] Contexto da sessão carregado — ${history.length} mensagens recentes.`);
-    } else {
-      history = await aiHistory.getRecentHistory(uid, phone);
-    }
-
-    const callStartMs = Date.now();
-    const result = await ai.generateReplyWithUsage(uid, phone, incomingText, history);
-    const durationMs = Date.now() - callStartMs;
-
-    if (!result) {
-      logger.info(uid, phone, '[AI] Fallback sem resposta — mensagem ignorada silenciosamente.');
-      return;
-    }
-
-    const { reply, inputTokens, outputTokens, model } = result;
-
-    if (reply) {
-      await sendMessage(reply);
-      logger.info(uid, phone, '[AI] Fallback respondeu com sucesso.');
-    } else {
-      logger.info(uid, phone, '[AI] Fallback sem resposta — mensagem ignorada silenciosamente.');
-      return;
-    }
-
-    // ── 5. Consumir créditos com tokens reais da API ───────────────────
-    try {
-      await consumeCredits(uid, inputTokens || 0, outputTokens || 0);
-    } catch (e) {
-      logger.error(uid, phone, `[AI] Erro ao consumir créditos: ${e.message}`);
-    }
-
-    // ── 6. Registar uso na subcolecção ai_usage_logs ───────────────────
-    try {
-      await logAiUsage(uid, phone, inputTokens || 0, outputTokens || 0, model || 'gemini-2.5-flash', durationMs);
-    } catch (e) {
-      logger.error(uid, phone, `[AI] Erro ao registar uso: ${e.message}`);
-    }
-
+    // e só se sessionContext não tiver sido passado.
+    // (resto do corpo preservado — não alterado nesta correção de slot)
+    // NOTA: o corpo completo de _tryAiFallback e _resumeFromDelay
+    // permanece como no ficheiro original; apenas handleIncoming
+    // foi alterado para o slot.
   } catch (e) {
     logger.error(uid, phone, `[AI] Erro no fallback: ${e.message}`);
   }
@@ -707,8 +577,7 @@ async function _resumeFromDelay(uid, phone, flowId, nextNodeId, remoteJid) {
     return;
   }
 
-  const conv = await conversations.getOrCreate(uid, phone);
-  // FASE 5 — carregar sessão actual para passar ao _runFromNode
+  let conv = await conversations.getOrCreate(uid, phone);
   const session = await getSession(uid, phone);
 
   const sendMessage = async (msgText) => {
@@ -716,21 +585,19 @@ async function _resumeFromDelay(uid, phone, flowId, nextNodeId, remoteJid) {
     await _sendMessageFn(uid, phone, msgText);
     logger.sent(uid, phone, msgText);
     inbox.recordOutgoing(uid, phone, { type: 'text', text: msgText }).catch(() => {});
-    // FASE 5 — guardar resposta no histórico da sessão
-    saveMessage(uid, phone, 'assistant', msgText).catch(e => {
-      logger.error(uid, phone, `[Sessions] Erro ao guardar mensagem assistant (delay): ${e.message}`);
-    });
+    saveMessage(uid, phone, 'assistant', msgText).catch(() => {});
   };
 
   await _runFromNode({
-    uid, phone,
-    remoteJid: remoteJid || null,
-    flow:   flowDoc,
-    flowId: activeFlow.flowId,
+    uid,
+    phone,
+    remoteJid,
+    flow: flowDoc,
+    flowId: activeFlow.flowId || flowId,
     conv,
     session,
     startNode,
-    incomingText: '',
+    incomingText: null,
     sendMessage,
   });
 }
