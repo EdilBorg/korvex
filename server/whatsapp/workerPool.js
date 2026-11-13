@@ -90,14 +90,31 @@ function _spawnWorker(workerId) {
         console.info(`[WorkerPool] Worker ${workerId} pronto.`);
         break;
 
-      case 'INCOMING':
-        // Mensagem recebida do WhatsApp — encaminhar ao workflowEngine
-        if (_onIncoming) {
-          _onIncoming(msg.sessionId, msg.message).catch(e => {
-            console.error(`[WorkerPool] Erro ao processar mensagem incoming:`, e.message);
-          });
+      case 'INCOMING': {
+        // Mensagem recebida do WhatsApp — encaminhar ao workflowEngine.
+        // O worker envia sessionId no formato "{uid}_{slot}" (ex.: "abc_whatsapp_1").
+        // O workflowEngine espera apenas o UID Firebase; o slot é preservado na mensagem.
+        if (!_onIncoming) break;
+
+        const sessionId = typeof msg.sessionId === 'string' ? msg.sessionId : '';
+        const parsed = sessionId.match(/^(.+)_(whatsapp_[12])$/);
+        if (!parsed) {
+          console.error(`[WorkerPool] INCOMING ignorado — sessionId inválido: ${JSON.stringify(sessionId)}`);
+          break;
         }
+        const uid  = parsed[1];
+        const slot = parsed[2];
+
+        // Preservar slot no objecto da mensagem sem mutar o payload original
+        const incomingMessage = (msg.message && typeof msg.message === 'object')
+          ? { ...msg.message, slot }
+          : { value: msg.message, slot };
+
+        _onIncoming(uid, incomingMessage).catch(e => {
+          console.error(`[WorkerPool] Erro ao processar mensagem incoming:`, e.message);
+        });
         break;
+      }
 
       case 'STATUS_UPDATE':
         // Worker reporta mudança de estado de uma sessão
