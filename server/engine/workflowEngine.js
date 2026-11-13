@@ -9,11 +9,11 @@
        WhatsApp → manager.js (messages.upsert)
                        │
                        ▼
-              workflowEngine.handleIncoming(uid, { phone, text, timestamp })
+              workflowEngine.handleIncoming(uid, { phone, text, timestamp, slot })
                        │
             ┌──────────┴───────────┐
             │ 1. sessions/          → gestão de sessões (NOVO)
-            │ 2. flows.js           → activeFlowId de connections/whatsapp
+            │ 2. flows.js           → activeFlowId de connections/{slot}
             │ 3. conversations.js   → estado actual desta conversa
             │ 4. graph.js           → navegação entre nós
             │ 5. executors/*.js     → ação de cada nó
@@ -114,17 +114,40 @@ function init(db, sendMessageFn) {
 const MAX_STEPS_PER_TURN = 25;
 
 /**
- * Ponto de entrada principal — chamado pelo manager.js sempre que uma
- * mensagem de texto é recebida no WhatsApp.
- * @param {string} uid    workspace (Firebase UID do dono da conexão)
- * @param {{phone: string, text: string, timestamp: number}} message
+ * Ponto de entrada principal — chamado pelo workerPool / manager sempre que
+ * uma mensagem é recebida no WhatsApp.
+ *
+ * Contrato actual (multi-slot):
+ *   - 1.º argumento: Firebase UID puro do workspace (não contém o slot).
+ *   - 2.º argumento: objecto da mensagem; o slot da conexão vem em message.slot.
+ *   - Slots suportados: apenas 'whatsapp_1' e 'whatsapp_2'.
+ *   - Se message.slot estiver ausente ou for null → fallback 'whatsapp_1'
+ *     (compatibilidade com chamadas antigas).
+ *   - Qualquer outro valor de slot → mensagem ignorada (aviso + return),
+ *     sem consultar Firestore nem executar fluxo.
+ *
+ * @param {string} uid     Firebase UID puro do workspace
+ * @param {{phone: string, text?: string, timestamp?: number, slot?: string, isGroup?: boolean, [key: string]: any}} message
  */
-async function handleIncoming(sessionId, message) {
-  // sessionId pode ser "uid" (legado) ou "uid_whatsapp_1"/"uid_whatsapp_2" (multi-slot)
-  let uid  = sessionId;
-  let slot = 'whatsapp_1';
-  const slotMatch = sessionId.match(/^(.+)_(whatsapp_[12])$/);
-  if (slotMatch) { uid = slotMatch[1]; slot = slotMatch[2]; }
+async function handleIncoming(uid, message) {
+  // ── Validação de slot (multi-slot) ────────────────────────────────────
+  // O workerPool já separa uid e slot e coloca o slot em message.slot.
+  // Aceitamos apenas whatsapp_1 / whatsapp_2. Ausente/null → whatsapp_1.
+  const SUPPORTED_SLOTS = Object.freeze(['whatsapp_1', 'whatsapp_2']);
+  const DEFAULT_SLOT = 'whatsapp_1';
+
+  const rawSlot = (message == null || message.slot == null)
+    ? DEFAULT_SLOT
+    : message.slot;
+
+  if (!SUPPORTED_SLOTS.includes(rawSlot)) {
+    console.warn(
+      `[Engine] Mensagem ignorada — slot inválido: ${JSON.stringify(rawSlot)}`
+    );
+    return;
+  }
+
+  const slot = rawSlot;
 
   const { phone, remoteJid, text, timestamp, type, mediaUrl, mediaMime, pushName, isGroup, groupJid, participantPhone, participantPushName } = message;
 
@@ -142,9 +165,10 @@ async function handleIncoming(sessionId, message) {
     }).catch(e => logger.error(uid, phone, `[Inbox][GROUP] Erro em recordIncoming: ${e.message}`));
 
     // Verificar se o fluxo activo permite responder a grupos
-    const groupFlow = await flows.getActiveFlowForChannel(uid, 'whatsapp');
+    // Usa o slot validado (connections/whatsapp_1 ou connections/whatsapp_2)
+    const groupFlow = await flows.getActiveFlowForChannel(uid, slot);
     if (!groupFlow) {
-      console.info(`[GROUP] Fluxo bloqueado — nenhum fluxo ativo (uid: ${uid})`);
+      console.info(`[GROUP] Fluxo bloqueado — nenhum fluxo ativo (uid: ${uid}, slot: ${slot})`);
       return;
     }
 
@@ -157,7 +181,7 @@ async function handleIncoming(sessionId, message) {
       return;
     }
 
-    console.info(`[GROUP] Fluxo permitido — a executar fluxo para grupo: ${phone} (uid: ${uid})`);
+    console.info(`[GROUP] Fluxo permitido — a executar fluxo para grupo: ${phone} (uid: ${uid}, slot: ${slot})`);
     // Executar o fluxo normalmente (phone = groupJid, mensagem vai para o grupo)
     // A execução continua abaixo como se fosse uma conversa privada
   } else {
@@ -219,9 +243,9 @@ async function handleIncoming(sessionId, message) {
 
   // ── Buscar fluxo activo ───────────────────────────────────────────────
   // FASE 3.2.1 — ALTERAÇÃO CRÍTICA: já não se procura "fluxo publicado".
-  // Lê-se directamente o activeFlowId associado a este número (canal
-  // 'whatsapp' — preparado para múltiplos números no futuro, Parte 8).
-  const activeFlow = await flows.getActiveFlowForChannel(uid, 'whatsapp');
+  // Lê-se directamente o activeFlowId do documento de conexão do slot
+  // (ex.: connections/whatsapp_1 ou connections/whatsapp_2).
+  const activeFlow = await flows.getActiveFlowForChannel(uid, slot);
   if (!activeFlow) {
     logger.info(uid, phone, 'Nenhum fluxo ativo — a tentar fallback IA.');
     const sendMsgFn = async (msgText) => {
