@@ -142,7 +142,11 @@ async function useFirestoreAuthState(db, sessionId) {
         try {
           await withTimeout(batch.commit(), 10000, `keys.set batch.commit()`);
         } catch (e) {
+          // Não tratar falha de persistência como sucesso: o Baileys precisa
+          // de saber que as chaves não foram gravadas, senão a sessão local
+          // fica dessincronizada (Bad MAC / Failed to decrypt).
           console.error(`[AuthStore] Erro ao guardar batch de chaves para ${sessionId}:`, e.message);
+          throw e;
         }
       }
     },
@@ -154,6 +158,7 @@ async function useFirestoreAuthState(db, sessionId) {
       await withTimeout(metaRef.set({ json: JSON.stringify(creds, BufferJSON.replacer) }), 10000, 'saveCreds metaRef.set()');
     } catch (e) {
       console.error(`[AuthStore] Erro ao guardar creds para ${sessionId}:`, e.message);
+      throw e;
     }
   };
 

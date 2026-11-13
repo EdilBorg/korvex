@@ -134,6 +134,8 @@ function _delayRef(uid, delayId) {
  */
 async function execute(ctx) {
   const { uid, phone, remoteJid, node, flow, flowId } = ctx;
+  // Multi-slot: o motor passa o slot validado no ctx; default para compatibilidade.
+  const slot = (ctx.slot == null) ? 'whatsapp_1' : ctx.slot;
   const settings = node.settings || {};
 
   // Leitura do tempo: suporta nó standalone e sub-item de bloco composto
@@ -158,7 +160,7 @@ async function execute(ctx) {
 
   const delayId = _delayId(uid, phone);
 
-  // Persistir no Firestore
+  // Persistir no Firestore (inclui slot para retomada multi-slot após restart)
   if (_db) {
     try {
       await _delayRef(uid, delayId).set({
@@ -170,6 +172,7 @@ async function execute(ctx) {
         nextNodeId,
         executeAt,
         createdAt:   Date.now(),
+        slot,
       });
     } catch (e) {
       logger.error(uid, phone, `[DELAY] Erro ao persistir delay ${delayId}: ${e.message}`);
@@ -178,10 +181,10 @@ async function execute(ctx) {
   }
 
   logger.info(uid, phone,
-    `[DELAY] Agendado — id: ${delayId} | duração: ${amount} ${unit} (${ms}ms) | executeAt: ${new Date(executeAt).toISOString()}`);
+    `[DELAY] Agendado — id: ${delayId} | slot: ${slot} | duração: ${amount} ${unit} (${ms}ms) | executeAt: ${new Date(executeAt).toISOString()}`);
 
   // Agendar execução
-  _scheduleDelay({ uid, phone, remoteJid: remoteJid || null, flowId, nextNodeId, executeAt, delayId });
+  _scheduleDelay({ uid, phone, remoteJid: remoteJid || null, flowId, nextNodeId, executeAt, delayId, slot });
 
   return { isDelay: true };
 }
@@ -190,7 +193,7 @@ async function execute(ctx) {
  * Agenda (ou reagenda) um delay via setTimeout.
  * Usado tanto no execute() normal como na recuperação após restart.
  */
-function _scheduleDelay({ uid, phone, remoteJid, flowId, nextNodeId, executeAt, delayId, isRecovery = false }) {
+function _scheduleDelay({ uid, phone, remoteJid, flowId, nextNodeId, executeAt, delayId, slot, isRecovery = false }) {
   const remaining = Math.max(0, executeAt - Date.now());
 
   if (isRecovery) {
@@ -249,7 +252,8 @@ function _scheduleDelay({ uid, phone, remoteJid, flowId, nextNodeId, executeAt, 
     // Retomar fluxo
     if (nextNodeId && _resumeFromDelay) {
       try {
-        await _resumeFromDelay(uid, phone, flowId, nextNodeId, remoteJid);
+        // Passar o slot preservado para o motor consultar connections/{slot}
+        await _resumeFromDelay(uid, phone, flowId, nextNodeId, remoteJid, slot || 'whatsapp_1');
       } catch (e) {
         logger.error(uid, phone, `[DELAY] Erro ao retomar fluxo após delay: ${e.message}`);
       }
@@ -301,6 +305,8 @@ async function recoverPendingDelays(db, resumeCallback) {
           nextNodeId:  data.nextNodeId,
           executeAt:   data.executeAt,
           delayId:     delayDoc.id,
+          // Compatibilidade: delays antigos sem campo slot usam whatsapp_1
+          slot:        data.slot || 'whatsapp_1',
           isRecovery:  true,
         });
       }

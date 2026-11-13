@@ -425,6 +425,7 @@ async function handleIncoming(uid, message) {
     flow: flowDoc, flowId: activeFlow.flowId,
     conv, session,
     startNode: currentNode, incomingText: text, sendMessage,
+    slot,
   });
 }
 
@@ -434,7 +435,7 @@ async function handleIncoming(uid, message) {
  * 'encerrar' (fim), ou nó terminal sem saída.
  * @param {object} params
  */
-async function _runFromNode({ uid, phone, remoteJid, flow, flowId, conv, session, startNode, incomingText, sendMessage }) {
+async function _runFromNode({ uid, phone, remoteJid, flow, flowId, conv, session, startNode, incomingText, sendMessage, slot }) {
   let node = startNode;
   let steps = 0;
   let lastPort; // porta de saída a usar na próxima navegação (ex.: 'Sim'/'Não' — preparado para a condição da fase seguinte)
@@ -456,6 +457,7 @@ async function _runFromNode({ uid, phone, remoteJid, flow, flowId, conv, session
       variables: conv.variables || {},
       incomingText,
       sendMessage,
+      slot: slot || 'whatsapp_1',
     };
 
     let result;
@@ -710,17 +712,37 @@ function invalidateFlowCache(uid, channelDoc) {
  * FASE 5 — Retomar fluxo após um delay expirar.
  * Chamado pelo delay.js quando o setTimeout dispara (ou na recuperação
  * após restart). Carrega o fluxo e a conversa e executa a partir de nextNodeId.
+ *
+ * Multi-slot: o slot da conexão que originou o delay deve ser passado
+ * para consultar o activeFlowId correcto em connections/{slot}.
+ * Ausente/null → fallback 'whatsapp_1' (compatibilidade com delays antigos).
+ *
  * @param {string} uid
  * @param {string} phone
  * @param {string} flowId
  * @param {string} nextNodeId
+ * @param {string|null} [remoteJid]
+ * @param {string} [slot='whatsapp_1']
  */
-async function _resumeFromDelay(uid, phone, flowId, nextNodeId, remoteJid) {
-  logger.info(uid, phone, `[DELAY] Executado — a retomar fluxo a partir do nó ${nextNodeId}`);
+async function _resumeFromDelay(uid, phone, flowId, nextNodeId, remoteJid, slot) {
+  const SUPPORTED_SLOTS = Object.freeze(['whatsapp_1', 'whatsapp_2']);
+  const DEFAULT_SLOT = 'whatsapp_1';
 
-  const activeFlow = await flows.getActiveFlowForChannel(uid, 'whatsapp');
+  const rawSlot = (slot == null) ? DEFAULT_SLOT : slot;
+  if (!SUPPORTED_SLOTS.includes(rawSlot)) {
+    logger.warn(uid, phone,
+      `[DELAY] Slot inválido ao retomar: ${JSON.stringify(rawSlot)} — delay abandonado.`);
+    return;
+  }
+  const resolvedSlot = rawSlot;
+
+  logger.info(uid, phone,
+    `[DELAY] Executado — a retomar fluxo a partir do nó ${nextNodeId} (slot: ${resolvedSlot})`);
+
+  const activeFlow = await flows.getActiveFlowForChannel(uid, resolvedSlot);
   if (!activeFlow) {
-    logger.warn(uid, phone, '[DELAY] Nenhum fluxo ativo ao retomar — delay abandonado.');
+    logger.warn(uid, phone,
+      `[DELAY] Nenhum fluxo ativo ao retomar (slot: ${resolvedSlot}) — delay abandonado.`);
     return;
   }
 
@@ -756,6 +778,7 @@ async function _resumeFromDelay(uid, phone, flowId, nextNodeId, remoteJid) {
     startNode,
     incomingText: '',
     sendMessage,
+    slot: resolvedSlot,
   });
 }
 
