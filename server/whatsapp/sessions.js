@@ -138,15 +138,32 @@ function countByStatus(status) {
 }
 
 /**
+ * Actualiza o state de uma sessão com validação.
+ * @param {string} uid
+ * @param {string} state  — 'idle'|'connecting'|'connected'|'reconnecting'|'failed'|'disconnected'
+ * @param {object} [extra] — campos adicionais a fundir
+ */
+function setState(uid, state, extra = {}) {
+  if (!VALID_STATES.includes(state)) {
+    throw new Error(`[Sessions] setState: state inválido: ${state}`);
+  }
+  return set(uid, { state, status: state, ...extra });
+}
+
+/**
  * NOVO — Verifica se é seguro iniciar uma nova conexão para um uid.
- * Retorna true APENAS se:
+ * Retorna true se:
  * - Não existe sessão, OU
- * - Sessão está em 'idle', 'failed', ou 'disconnected'
- * 
+ * - Sessão está em 'idle', 'failed', 'disconnected', ou 'reconnecting'
+ *
+ * 'reconnecting' é permitido: significa que a ligação anterior já fechou
+ * e o auto-reconnect (ou um pedido manual) deve poder criar um novo socket.
+ *
  * Retorna false (bloqueia) se:
- * - Sessão está em 'connecting', 'reconnecting', ou 'connected'
- * 
+ * - Sessão está em 'connecting' ou 'connected' (ligação viva / em curso)
+ *
  * Usa isto ANTES de chamar makeWASocket() para evitar sockets duplicados.
+ * A serialização de startSession() continua em _startSessionLocks no manager.
  * 
  * @param {string} uid
  * @returns {boolean}
@@ -154,9 +171,20 @@ function countByStatus(status) {
 function canStartNewConnection(uid) {
   const sess = get(uid);
   if (!sess) return true; // sem sessão = pode iniciar
-  
-  // Estados que BLOQUEIAM nova conexão
-  const blockingStates = ['connecting', 'reconnecting', 'connected'];
+
+  // reconnecting = a ligação anterior já encerrou e está agendada uma
+  // nova tentativa (auto-reconnect). NÃO bloquear: caso contrário
+  // startSession({ fresh:false }) é rejeitado e a sessão fica presa
+  // em "reconnecting" sem QR nem socket novo.
+  // A protecção contra sockets duplicados continua em:
+  //   - _startSessionLocks (uma execução de startSession por uid)
+  //   - estados 'connecting' / 'connected' abaixo
+  if (sess.state === 'reconnecting') {
+    return true;
+  }
+
+  // Estados que BLOQUEIAM nova conexão (ligação viva ou em curso)
+  const blockingStates = ['connecting', 'connected'];
   return !blockingStates.includes(sess.state);
 }
 
@@ -198,98 +226,109 @@ function canReconnect(uid) {
 /**
  * NOVO — Incrementa o contador de retry para uma sessão.
  * Retorna true se ainda pode continuar tentando.
- * Retorna false se atingiu o limite.
+ * Retorna false se atingiu o limite (maxRetries).
  * 
  * @param {string} uid
- * @returns {boolean} — true se pode continuar, false se atingiu limite
+ * @returns {boolean} true se pode continuar, false se atingiu limite
  */
 function incrementRetry(uid) {
   const sess = get(uid);
   if (!sess) return false;
   
-  const newCount = (sess.retryCount || 0) + 1;
   const maxRetries = sess.maxRetries || DEFAULT_MAX_RETRIES;
+  const newCount = (sess.retryCount || 0) + 1;
   
   set(uid, {
     retryCount: newCount,
     lastErrorAt: Date.now(),
   });
   
-  return newCount < maxRetries;
+  return newCount <= maxRetries;
 }
 
 /**
- * NOVO — Reseta o contador de retry (chamado após conexão bem-sucedida).
+ * NOVO — Reseta o contador de retry (após conexão bem-sucedida).
  * 
  * @param {string} uid
  */
 function resetRetry(uid) {
+  const sess = get(uid);
+  if (!sess) return;
+  
   set(uid, {
     retryCount: 0,
     lastError: null,
+    lastErrorAt: null,
+    failedAt: null,
   });
 }
 
 /**
- * NOVO — Inicializa uma sessão com valores padrão.
+ * NOVO — Inicializa uma nova sessão com state machine completa.
  * Chamado quando startSession() cria uma nova sessão.
  * 
  * @param {string} uid
- * @param {object} opts
+ * @param {object} data — dados iniciais (socket, socketInstanceId, etc.)
  */
-function initializeSession(uid, opts = {}) {
-  set(uid, {
-    state: 'idle',
-    retryCount: 0,
-    maxRetries: DEFAULT_MAX_RETRIES,
-    lastError: null,
-    lastErrorAt: null,
-    failedAt: null,
-    socket: opts.socket || null,
-    socketInstanceId: opts.socketInstanceId || null,
+function initializeSession(uid, data = {}) {
+  const now = Date.now();
+  return set(uid, {
+    uid,
+    sessionId: uid,
+    state: 'connecting',
     status: 'connecting', // compatibilidade
     phone: null,
     qr: null,
     qrGeneratedAt: null,
     connectedAt: null,
-    createdAt: Date.now(),
-    sessionId: uid,
-    ...opts,
+    createdAt: now,
+    retryCount: 0,
+    maxRetries: DEFAULT_MAX_RETRIES,
+    lastError: null,
+    lastErrorAt: null,
+    failedAt: null,
+    stateChangedAt: now,
+    ...data,
   });
 }
 
 /**
- * NOVO — Helper para logs estruturados.
- * Devolve um objecto com os campos essenciais da sessão.
+ * NOVO — Gera log estruturado para uma sessão.
+ * Formato: [Manager][uid][state] mensagem {dados}
  * 
  * @param {string} uid
- * @returns {object}
+ * @returns {object} { prefix, state, retryCount, ... }
  */
 function getStructuredLog(uid) {
   const sess = get(uid);
   if (!sess) {
     return {
-      uid,
+      prefix: `[Manager][${uid}][no-session]`,
       state: 'none',
       retryCount: 0,
-      lastError: null,
     };
   }
-  
   return {
-    uid,
+    prefix: `[Manager][${uid}][${sess.state}]`,
     state: sess.state,
-    retryCount: sess.retryCount,
-    maxRetries: sess.maxRetries,
-    lastError: sess.lastError,
-    phone: sess.phone,
-    socketInstanceId: sess.socketInstanceId,
+    retryCount: sess.retryCount || 0,
+    maxRetries: sess.maxRetries || DEFAULT_MAX_RETRIES,
+    phone: sess.phone || null,
+    hasQr: !!sess.qr,
+    socketInstanceId: sess.socketInstanceId || null,
   };
 }
 
 module.exports = {
-  set, get, remove, has, allUids, 
-  countByState, countByStatus, // mantém compatibilidade
+  set,
+  get,
+  remove,
+  has,
+  allUids,
+  countByState,
+  countByStatus,
+  setState,
+  // CAMADA 1.1 — State Machine
   canStartNewConnection,
   setFailed,
   canReconnect,
@@ -297,6 +336,7 @@ module.exports = {
   resetRetry,
   initializeSession,
   getStructuredLog,
+  // Constantes
   VALID_STATES,
   DEFAULT_MAX_RETRIES,
   WATCHDOG_CONNECTING_TIMEOUT_MS,
